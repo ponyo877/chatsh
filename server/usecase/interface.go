@@ -7,7 +7,7 @@ type Repository interface {
 	GetNode(path string) (Node, error)
 
 	// Directory
-	CreateDirectory(path string, parents bool) error
+	CreateDirectory(path string, ownerID int, parents bool) error
 	DeleteDirectory(path string, recursive, force bool) error
 	UpdateDirectory(path string) (string, error)
 	UpdateDirectoryPath(src, dst string, overwrite bool) error
@@ -18,13 +18,10 @@ type Repository interface {
 	DeleteFile(path string, force bool) error
 	UpdateFile(src, dst string, overwrite bool) error
 	UpdateFilePath(src, dst string, overwrite bool) error
-	GetFileContent(path string) ([]byte, error)
-	UpdateFileContent(text, path string, appendMode bool) error
 	ListFiles(path int) ([]string, error)
 
 	// File Info
 	ListFileMatches(pattern string, path []string, recursive, ignoreCase bool) ([]GrepResult, error)
-	GetFileLines(path string, lineCount int, follow bool) ([]string, error)
 
 	// Message
 	ListMessages(roomID int) ([]string, error)
@@ -42,7 +39,6 @@ const (
 type Node struct {
 	ID   int
 	Type FileType
-	Path string
 }
 
 type FileInfo struct {
