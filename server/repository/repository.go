@@ -629,15 +629,12 @@ func (r *Repository) ListMessages(roomID int) ([]string, error) {
 	return messages, nil
 }
 
-// ListMessagesByQuery の引数 roomID は int
 func (r *Repository) ListMessagesByQuery(roomID int, query string) ([]string, error) {
-	// Use the provided roomID int directly
-	// Use MATCH AGAINST for fulltext search, assuming index exists
 	// Note: LIKE '%?%' is incorrect for prepared statements. Use MATCH or concatenate.
 	sqlQuery := `
 		SELECT content
 		FROM messages
-		WHERE room_id = ? AND MATCH(content) AGAINST(? IN NATURAL LANGUAGE MODE)
+		WHERE room_id = ? AND content LIKE '%?%'
 		ORDER BY created_at ASC
 	`
 	rows, err := r.db.Query(sqlQuery, roomID, query)
