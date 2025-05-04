@@ -1,0 +1,125 @@
+syntax = "proto3";
+
+package fs;
+
+option go_package = "./grpc";
+
+import "google/protobuf/timestamp.proto";
+
+service FileSystemService {
+  rpc CreateDirectory(CreateDirectoryRequest) returns (CreateDirectoryResponse);
+  rpc DeletePath(DeletePathRequest) returns (DeletePathResponse);
+  rpc CopyPath(CopyPathRequest) returns (CopyPathResponse);
+  rpc MovePath(MovePathRequest) returns (MovePathResponse);
+  rpc ListNodes(ListNodesRequest) returns (ListNodesResponse);
+  rpc GetMessage(GetMessageRequest) returns (GetMessageResponse);
+  rpc StreamMessage(StreamMessageRequest) returns (stream MessageChunk);
+  rpc SearchMessage(SearchMessageRequest) returns (stream MessageMatch);
+  rpc WriteMessage(WriteMessageRequest) returns (WriteMessageResponse);
+}
+
+message Status {
+  bool ok = 1;
+  string message = 2;
+}
+
+message FileInfo {
+  string name = 1;
+  uint64 size = 2;
+  bool is_dir = 3;
+  google.protobuf.Timestamp modified = 4;
+}
+
+message CreateFileRequest {
+  string path = 1;
+  string owner_id = 2;
+}
+
+message CreateFileResponse { Status status = 1; }
+
+message ChangeDirectoryRequest {
+  string path = 1;
+  string owner_id = 2;
+}
+
+message ChangeDirectoryResponse {
+  Status status = 1;
+  string new_cwd = 2;
+}
+
+message CreateDirectoryRequest {
+  string path = 1;
+  string owner_id = 2;
+}
+
+message CreateDirectoryResponse { Status status = 1; }
+
+message DeletePathRequest {
+  string path = 1;
+  string owner_id = 2;
+}
+
+message DeletePathResponse { Status status = 1; }
+
+message CopyPathRequest {
+  string source_path = 1;
+  string destination_path = 2;
+  string owner_id = 3;
+}
+
+message CopyPathResponse { Status status = 1; }
+
+message MovePathRequest {
+  string source_path = 1;
+  string destination_path = 2;
+  string owner_id = 3;
+}
+
+message MovePathResponse { Status status = 1; }
+
+message ListNodesRequest {
+  string path = 1;
+  bool show_all = 2;
+  bool long_format = 3;
+}
+
+message ListNodesResponse { repeated FileInfo entries = 1; }
+
+message GetMessageRequest { string path = 1; }
+
+message GetMessageResponse { bytes content = 1; }
+
+message GetCurrentDirectoryResponse { string cwd = 1; }
+
+message StreamMessageRequest {
+  string path = 1;
+  uint32 initial_lines = 2;
+  bool follow = 3;
+}
+
+message MessageChunk {
+  string line = 1;
+  bool eof = 2;
+}
+
+message SearchMessageRequest {
+  string pattern = 1;
+  repeated string paths = 2;
+  bool recursive = 3;
+  bool ignore_case = 4;
+}
+
+message MessageMatch {
+  string file_path = 1;
+  uint64 line_number = 2;
+  string line_text = 3;
+}
+
+message WriteMessageRequest {
+  string text_content = 1;
+  string destination_path = 2;
+  bool append = 3;
+  string writer_id = 4;
+}
+
+message WriteMessageResponse { Status status = 1; }
