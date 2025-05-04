@@ -1,6 +1,10 @@
 package domain
 
+import "time"
+
 type Node struct {
-	ID   int
-	Type NodeType
+	ID        int
+	Name      string
+	Type      NodeType
+	CreatedAt time.Time
 }
