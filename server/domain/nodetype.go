@@ -4,6 +4,6 @@ type NodeType int
 
 const (
 	NodeTypeUnknown NodeType = iota
-	NodeTypeFile
+	NodeTypeRoom
 	NodeTypeDirectory
 )

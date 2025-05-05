@@ -5,28 +5,42 @@ import (
 	"strings"
 )
 
-type Path []string
+type Path struct {
+	PathStr    string
+	Components []string
+}
 
 func NewPath(path string) Path {
 	cleanedPath := filepath.Clean(path)
 	if cleanedPath == "/" {
-		return Path([]string{})
+		return Path{
+			PathStr:    cleanedPath,
+			Components: []string{},
+		}
 	}
 	// "/a/b/c" -> ["a", "b", "c"]
 	components := strings.Split(strings.TrimPrefix(cleanedPath, "/"), "/")
-	return Path(components)
+	return Path{
+		PathStr:    cleanedPath,
+		Components: components,
+	}
 }
 
 func (p Path) NodeName() string {
-	if len(p) == 0 {
+	if len(p.Components) == 0 {
 		return "/"
 	}
-	return p[len(p)-1]
+	return p.Components[len(p.Components)-1]
 }
 
 func (p Path) Parent() Path {
-	if len(p) == 0 {
-		return nil
+	if len(p.Components) == 0 {
+		return NewPath("/")
 	}
-	return Path(p[:len(p)-1])
+	parentPath := strings.Join(p.Components[:len(p.Components)-1], "/")
+	return NewPath(parentPath)
+}
+
+func (p Path) String() string {
+	return p.PathStr
 }
