@@ -7,6 +7,7 @@ type Node struct {
 	Name       string
 	Type       NodeType
 	OwnerToken string
+	OwnerName  string
 	CreatedAt  time.Time
 }
 

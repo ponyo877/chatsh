@@ -24,7 +24,7 @@ const (
 	FileSystemService_CopyPath_FullMethodName        = "/fs.FileSystemService/CopyPath"
 	FileSystemService_MovePath_FullMethodName        = "/fs.FileSystemService/MovePath"
 	FileSystemService_ListNodes_FullMethodName       = "/fs.FileSystemService/ListNodes"
-	FileSystemService_GetMessage_FullMethodName      = "/fs.FileSystemService/GetMessage"
+	FileSystemService_ListMessages_FullMethodName    = "/fs.FileSystemService/ListMessages"
 	FileSystemService_StreamMessage_FullMethodName   = "/fs.FileSystemService/StreamMessage"
 	FileSystemService_SearchMessage_FullMethodName   = "/fs.FileSystemService/SearchMessage"
 	FileSystemService_WriteMessage_FullMethodName    = "/fs.FileSystemService/WriteMessage"
@@ -39,9 +39,9 @@ type FileSystemServiceClient interface {
 	CopyPath(ctx context.Context, in *CopyPathRequest, opts ...grpc.CallOption) (*CopyPathResponse, error)
 	MovePath(ctx context.Context, in *MovePathRequest, opts ...grpc.CallOption) (*MovePathResponse, error)
 	ListNodes(ctx context.Context, in *ListNodesRequest, opts ...grpc.CallOption) (*ListNodesResponse, error)
-	GetMessage(ctx context.Context, in *GetMessageRequest, opts ...grpc.CallOption) (*GetMessageResponse, error)
+	ListMessages(ctx context.Context, in *ListMessagesRequest, opts ...grpc.CallOption) (*ListMessagesResponse, error)
 	StreamMessage(ctx context.Context, in *StreamMessageRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[MessageChunk], error)
-	SearchMessage(ctx context.Context, in *SearchMessageRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[MessageMatch], error)
+	SearchMessage(ctx context.Context, in *SearchMessageRequest, opts ...grpc.CallOption) (*SearchMessageResponse, error)
 	WriteMessage(ctx context.Context, in *WriteMessageRequest, opts ...grpc.CallOption) (*WriteMessageResponse, error)
 }
 
@@ -103,10 +103,10 @@ func (c *fileSystemServiceClient) ListNodes(ctx context.Context, in *ListNodesRe
 	return out, nil
 }
 
-func (c *fileSystemServiceClient) GetMessage(ctx context.Context, in *GetMessageRequest, opts ...grpc.CallOption) (*GetMessageResponse, error) {
+func (c *fileSystemServiceClient) ListMessages(ctx context.Context, in *ListMessagesRequest, opts ...grpc.CallOption) (*ListMessagesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetMessageResponse)
-	err := c.cc.Invoke(ctx, FileSystemService_GetMessage_FullMethodName, in, out, cOpts...)
+	out := new(ListMessagesResponse)
+	err := c.cc.Invoke(ctx, FileSystemService_ListMessages_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -132,24 +132,15 @@ func (c *fileSystemServiceClient) StreamMessage(ctx context.Context, in *StreamM
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type FileSystemService_StreamMessageClient = grpc.ServerStreamingClient[MessageChunk]
 
-func (c *fileSystemServiceClient) SearchMessage(ctx context.Context, in *SearchMessageRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[MessageMatch], error) {
+func (c *fileSystemServiceClient) SearchMessage(ctx context.Context, in *SearchMessageRequest, opts ...grpc.CallOption) (*SearchMessageResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &FileSystemService_ServiceDesc.Streams[1], FileSystemService_SearchMessage_FullMethodName, cOpts...)
+	out := new(SearchMessageResponse)
+	err := c.cc.Invoke(ctx, FileSystemService_SearchMessage_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[SearchMessageRequest, MessageMatch]{ClientStream: stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
+	return out, nil
 }
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type FileSystemService_SearchMessageClient = grpc.ServerStreamingClient[MessageMatch]
 
 func (c *fileSystemServiceClient) WriteMessage(ctx context.Context, in *WriteMessageRequest, opts ...grpc.CallOption) (*WriteMessageResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -170,9 +161,9 @@ type FileSystemServiceServer interface {
 	CopyPath(context.Context, *CopyPathRequest) (*CopyPathResponse, error)
 	MovePath(context.Context, *MovePathRequest) (*MovePathResponse, error)
 	ListNodes(context.Context, *ListNodesRequest) (*ListNodesResponse, error)
-	GetMessage(context.Context, *GetMessageRequest) (*GetMessageResponse, error)
+	ListMessages(context.Context, *ListMessagesRequest) (*ListMessagesResponse, error)
 	StreamMessage(*StreamMessageRequest, grpc.ServerStreamingServer[MessageChunk]) error
-	SearchMessage(*SearchMessageRequest, grpc.ServerStreamingServer[MessageMatch]) error
+	SearchMessage(context.Context, *SearchMessageRequest) (*SearchMessageResponse, error)
 	WriteMessage(context.Context, *WriteMessageRequest) (*WriteMessageResponse, error)
 	mustEmbedUnimplementedFileSystemServiceServer()
 }
@@ -199,14 +190,14 @@ func (UnimplementedFileSystemServiceServer) MovePath(context.Context, *MovePathR
 func (UnimplementedFileSystemServiceServer) ListNodes(context.Context, *ListNodesRequest) (*ListNodesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListNodes not implemented")
 }
-func (UnimplementedFileSystemServiceServer) GetMessage(context.Context, *GetMessageRequest) (*GetMessageResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetMessage not implemented")
+func (UnimplementedFileSystemServiceServer) ListMessages(context.Context, *ListMessagesRequest) (*ListMessagesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListMessages not implemented")
 }
 func (UnimplementedFileSystemServiceServer) StreamMessage(*StreamMessageRequest, grpc.ServerStreamingServer[MessageChunk]) error {
 	return status.Errorf(codes.Unimplemented, "method StreamMessage not implemented")
 }
-func (UnimplementedFileSystemServiceServer) SearchMessage(*SearchMessageRequest, grpc.ServerStreamingServer[MessageMatch]) error {
-	return status.Errorf(codes.Unimplemented, "method SearchMessage not implemented")
+func (UnimplementedFileSystemServiceServer) SearchMessage(context.Context, *SearchMessageRequest) (*SearchMessageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchMessage not implemented")
 }
 func (UnimplementedFileSystemServiceServer) WriteMessage(context.Context, *WriteMessageRequest) (*WriteMessageResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method WriteMessage not implemented")
@@ -322,20 +313,20 @@ func _FileSystemService_ListNodes_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _FileSystemService_GetMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetMessageRequest)
+func _FileSystemService_ListMessages_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListMessagesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FileSystemServiceServer).GetMessage(ctx, in)
+		return srv.(FileSystemServiceServer).ListMessages(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: FileSystemService_GetMessage_FullMethodName,
+		FullMethod: FileSystemService_ListMessages_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FileSystemServiceServer).GetMessage(ctx, req.(*GetMessageRequest))
+		return srv.(FileSystemServiceServer).ListMessages(ctx, req.(*ListMessagesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -351,16 +342,23 @@ func _FileSystemService_StreamMessage_Handler(srv interface{}, stream grpc.Serve
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type FileSystemService_StreamMessageServer = grpc.ServerStreamingServer[MessageChunk]
 
-func _FileSystemService_SearchMessage_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(SearchMessageRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
+func _FileSystemService_SearchMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchMessageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
 	}
-	return srv.(FileSystemServiceServer).SearchMessage(m, &grpc.GenericServerStream[SearchMessageRequest, MessageMatch]{ServerStream: stream})
+	if interceptor == nil {
+		return srv.(FileSystemServiceServer).SearchMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FileSystemService_SearchMessage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FileSystemServiceServer).SearchMessage(ctx, req.(*SearchMessageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type FileSystemService_SearchMessageServer = grpc.ServerStreamingServer[MessageMatch]
 
 func _FileSystemService_WriteMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(WriteMessageRequest)
@@ -408,8 +406,12 @@ var FileSystemService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _FileSystemService_ListNodes_Handler,
 		},
 		{
-			MethodName: "GetMessage",
-			Handler:    _FileSystemService_GetMessage_Handler,
+			MethodName: "ListMessages",
+			Handler:    _FileSystemService_ListMessages_Handler,
+		},
+		{
+			MethodName: "SearchMessage",
+			Handler:    _FileSystemService_SearchMessage_Handler,
 		},
 		{
 			MethodName: "WriteMessage",
@@ -420,11 +422,6 @@ var FileSystemService_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "StreamMessage",
 			Handler:       _FileSystemService_StreamMessage_Handler,
-			ServerStreams: true,
-		},
-		{
-			StreamName:    "SearchMessage",
-			Handler:       _FileSystemService_SearchMessage_Handler,
 			ServerStreams: true,
 		},
 	},

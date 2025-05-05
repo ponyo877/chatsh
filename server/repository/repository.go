@@ -28,16 +28,32 @@ func NewRepository(db *sql.DB) usecase.Repository {
 
 func (r *Repository) GetNodeByPath(path domain.Path) (domain.Node, error) {
 	query := `
-		SELECT id, 1 AS type, owner_token, created_at FROM directories WHERE path = $1
+		SELECT
+			d.id,
+			1 AS type,
+			d.owner_token,
+			u.display_name,
+			d.created_at
+		FROM directories d
+		JOIN users u ON d.owner_token = u.owner_token
+		WHERE d.path = $1
 		UNION ALL
-		SELECT id, 2 AS type, owner_token, created_at FROM rooms WHERE path = $1
+		SELECT
+			r.id,
+			2 AS type,
+			r.owner_token,
+			u.display_name,
+			r.created_at
+		FROM rooms r
+		JOIN users u ON r.owner_token = u.owner_token
+		WHERE r.path = $1;
 	`
 
 	var nodeType domain.NodeType
 	var nodeID int
-	var ownerToken string
+	var ownerToken, displayName string
 	var createdAt time.Time
-	if err := r.db.QueryRow(query, path.String()).Scan(&nodeID, &nodeType, &ownerToken, &createdAt); err != nil {
+	if err := r.db.QueryRow(query, path.String()).Scan(&nodeID, &nodeType, &ownerToken, &displayName, &createdAt); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return domain.Node{}, ErrNotFound
 		}
@@ -48,6 +64,7 @@ func (r *Repository) GetNodeByPath(path domain.Path) (domain.Node, error) {
 		Name:       path.NodeName(),
 		Type:       nodeType,
 		OwnerToken: ownerToken,
+		OwnerName:  displayName,
 		CreatedAt:  createdAt,
 	}, nil
 }
@@ -55,9 +72,27 @@ func (r *Repository) GetNodeByPath(path domain.Path) (domain.Node, error) {
 // showAll, longFormat はusecaseで判断
 func (r *Repository) ListNodes(parentDirID int) ([]domain.Node, error) {
 	query := `
-		SELECT id, name, 1 AS type, owner_token, created_at FROM directories WHERE parent_id = $1
+		SELECT
+			d.id,
+			d.name,
+			1 AS type,
+			d.owner_token,
+			u.display_name,
+			d.created_at
+		FROM directories d
+		JOIN users u ON d.owner_token = u.owner_token
+		WHERE parent_id = $1
 		UNION ALL
-		SELECT id, name, 2 AS type, owner_token, created_at FROM rooms WHERE directory_id = $1
+		SELECT
+			r.id,
+			r.name,
+			2 AS type,
+			r.owner_token,
+			u.display_name,
+			r.created_at
+		FROM rooms r
+		JOIN users u ON r.owner_token = u.owner_token
+		WHERE directory_id = $1
 	`
 	rows, err := r.db.Query(query, parentDirID)
 	if err != nil {
@@ -70,9 +105,9 @@ func (r *Repository) ListNodes(parentDirID int) ([]domain.Node, error) {
 		var id int
 		var name string
 		var nodeType domain.NodeType
-		var ownerToken string
+		var ownerToken, displayName string
 		var createdAt time.Time
-		if err := rows.Scan(&id, &name, &nodeType, &ownerToken, &createdAt); err != nil {
+		if err := rows.Scan(&id, &name, &nodeType, &ownerToken, &displayName, &createdAt); err != nil {
 			return nil, fmt.Errorf("failed to scan subdirectory info: %w", err)
 		}
 		results = append(results, domain.Node{
@@ -80,6 +115,7 @@ func (r *Repository) ListNodes(parentDirID int) ([]domain.Node, error) {
 			Name:       name,
 			Type:       domain.NodeTypeDirectory,
 			OwnerToken: ownerToken,
+			OwnerName:  displayName,
 			CreatedAt:  createdAt,
 		})
 	}
@@ -178,31 +214,31 @@ func (r *Repository) UpdateRoom(srcRoomID, dstDirID int, dstDirPath, name string
 	return nil
 }
 
-func (r *Repository) CreateMessage(roomID, userID int, message string) error {
-	query := "INSERT INTO messages (room_id, user_id, content, created_at) VALUES (?, ?, ?, ?)"
-	if _, err := r.db.Exec(query, roomID, userID, message, time.Now()); err != nil {
+func (r *Repository) CreateMessage(roomID int, displayName, message string) error {
+	query := "INSERT INTO messages (room_id, display_name, content, created_at) VALUES (?, ?, ?, ?)"
+	if _, err := r.db.Exec(query, roomID, displayName, message, time.Now()); err != nil {
 		return fmt.Errorf("failed to insert message for room %d: %w", roomID, err)
 	}
 	return nil
 }
 
 func (r *Repository) ListMessages(roomID, limit, offset int) ([]domain.Message, error) {
-	query := "SELECT id, user_id, content, created_at FROM messages WHERE room_id = ? ORDER BY created_at LIMIT ? OFFSET ?"
+	query := "SELECT id, display_name, content, created_at FROM messages WHERE room_id = ? ORDER BY created_at LIMIT ? OFFSET ?"
 	rows, err := r.db.Query(query, roomID, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query messages for room %d: %w", roomID, err)
 	}
 	defer rows.Close()
 
-	var id, userID int
-	var content string
+	var id int
+	var content, displayName string
 	var createdAt time.Time
 	messages := []domain.Message{}
 	for rows.Next() {
-		if err := rows.Scan(&id, &userID, &content, &createdAt); err != nil {
+		if err := rows.Scan(&id, &displayName, &content, &createdAt); err != nil {
 			return nil, fmt.Errorf("failed to scan message content: %w", err)
 		}
-		messages = append(messages, domain.NewMessage(id, roomID, userID, content, createdAt))
+		messages = append(messages, domain.NewMessage(id, roomID, displayName, content, createdAt))
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("error iterating over messages for room %d: %w", roomID, err)
@@ -220,14 +256,14 @@ func (r *Repository) ListMessagesByQuery(roomID int, pattern string) ([]domain.M
 	defer rows.Close()
 
 	var messages []domain.Message
-	var id, userID int
-	var content string
+	var id int
+	var content, displayName string
 	var createdAt time.Time
 	for rows.Next() {
-		if err := rows.Scan(&content, &id, &userID, &content, &createdAt); err != nil {
+		if err := rows.Scan(&content, &id, &displayName, &content, &createdAt); err != nil {
 			return nil, fmt.Errorf("failed to scan message content: %w", err)
 		}
-		messages = append(messages, domain.NewMessage(id, roomID, userID, content, createdAt))
+		messages = append(messages, domain.NewMessage(id, roomID, displayName, content, createdAt))
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("error iterating over search results for room %d: %w", roomID, err)

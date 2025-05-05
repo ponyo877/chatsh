@@ -12,9 +12,9 @@ service FileSystemService {
   rpc CopyPath(CopyPathRequest) returns (CopyPathResponse);
   rpc MovePath(MovePathRequest) returns (MovePathResponse);
   rpc ListNodes(ListNodesRequest) returns (ListNodesResponse);
-  rpc GetMessage(GetMessageRequest) returns (GetMessageResponse);
+  rpc ListMessages(ListMessagesRequest) returns (ListMessagesResponse);
   rpc StreamMessage(StreamMessageRequest) returns (stream MessageChunk);
-  rpc SearchMessage(SearchMessageRequest) returns (stream MessageMatch);
+  rpc SearchMessage(SearchMessageRequest) returns (SearchMessageResponse);
   rpc WriteMessage(WriteMessageRequest) returns (WriteMessageResponse);
 }
 
@@ -24,15 +24,22 @@ message Status {
 }
 
 enum NodeType {
-  ROOM = 0;
-  DIRECTORY = 1;
+  UNKNOWN = 0;
+  ROOM = 1;
+  DIRECTORY = 2;
 }
 
 message NodeInfo {
   string name = 1;
-  uint64 size = 2;
+  string owner_name = 2;
   NodeType type = 3;
   google.protobuf.Timestamp modified = 4;
+}
+
+message Message {
+  string text_content = 1;
+  string owner_name = 2;
+  google.protobuf.Timestamp created = 3;
 }
 
 message CreateFileRequest {
@@ -76,9 +83,9 @@ message ListNodesRequest { string path = 1; }
 
 message ListNodesResponse { repeated NodeInfo entries = 1; }
 
-message GetMessageRequest { string path = 1; }
+message ListMessagesRequest { string path = 1; }
 
-message GetMessageResponse { bytes content = 1; }
+message ListMessagesResponse { repeated Message messages = 1; }
 
 message StreamMessageRequest {
   string path = 1;
@@ -92,17 +99,11 @@ message MessageChunk {
 }
 
 message SearchMessageRequest {
-  string pattern = 1;
-  repeated string paths = 2;
-  bool recursive = 3;
-  bool ignore_case = 4;
+  string path = 1;
+  string pattern = 2;
 }
 
-message MessageMatch {
-  string file_path = 1;
-  uint64 line_number = 2;
-  string line_text = 3;
-}
+message SearchMessageResponse { repeated Message messages = 1; }
 
 message WriteMessageRequest {
   string text_content = 1;

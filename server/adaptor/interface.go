@@ -11,5 +11,5 @@ type Usecase interface {
 	MovePath(srcPath domain.Path, dstPath domain.Path, ownerTone string) error
 	SearchMessage(path domain.Path, pattern string) ([]domain.Message, error)
 	StreamMessage() error
-	WriteMessage(path domain.Path, message string, userID int) error
+	WriteMessage(path domain.Path, message, ownerToken string) error
 }

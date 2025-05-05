@@ -21,7 +21,7 @@ type Repository interface {
 	UpdateRoom(srcRoomID, dstDirID int, dstDirPath, name string) error
 
 	// Message
-	CreateMessage(roomID, userID int, message string) error
+	CreateMessage(roomID int, displayName, message string) error
 	ListMessages(roomID, limit, offset int) ([]domain.Message, error)
 	ListMessagesByQuery(roomID int, pattern string) ([]domain.Message, error)
 }

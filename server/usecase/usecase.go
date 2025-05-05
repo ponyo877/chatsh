@@ -175,7 +175,7 @@ func (u Usecase) SearchMessage(path domain.Path, pattern string) ([]domain.Messa
 	return messages, nil
 }
 
-func (u Usecase) WriteMessage(path domain.Path, message string, userID int) error {
+func (u Usecase) WriteMessage(path domain.Path, message, ownerToken string) error {
 	node, err := u.repo.GetNodeByPath(path)
 	if err != nil {
 		return fmt.Errorf("error getting room: %w", err)
@@ -183,7 +183,7 @@ func (u Usecase) WriteMessage(path domain.Path, message string, userID int) erro
 	if node.Type != domain.NodeTypeRoom {
 		return fmt.Errorf("path is not a room")
 	}
-	if err := u.repo.CreateMessage(node.ID, userID, message); err != nil {
+	if err := u.repo.CreateMessage(node.ID, ownerToken, message); err != nil {
 		return fmt.Errorf("error writing message: %w", err)
 	}
 	return nil
