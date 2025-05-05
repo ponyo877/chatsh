@@ -3,6 +3,7 @@ module github.com/ponyo877/chatsh
 go 1.24.1
 
 require (
+	github.com/mattn/go-sqlite3 v1.14.28
 	github.com/urfave/cli/v3 v3.3.1
 	google.golang.org/grpc v1.72.0
 	google.golang.org/protobuf v1.36.6
