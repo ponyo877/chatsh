@@ -1,37 +1,37 @@
 CREATE TABLE users (
-    id         VARCHAR(36)  PRIMARY KEY,
-    nick       VARCHAR(100) NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    INDEX (nick)
+    id         INTEGER  PRIMARY KEY AUTOINCREMENT,
+    nick       TEXT     NOT NULL,
+    created_at DATETIME NOT NULL
 );
+CREATE INDEX idx_users_nick ON users (nick);
 
 CREATE TABLE directories (
-    id         VARCHAR(36)  PRIMARY KEY,
-    name       VARCHAR(100) NOT NULL,
-    parent_id  VARCHAR(36)  NOT NULL REFERENCES directories(id),
-    owner_id   VARCHAR(36)  NOT NULL REFERENCES users(id),
-    path       TEXT         NOT NULL,
-    created_at TIMESTAMP    NOT NULL,
+    id         INTEGER  PRIMARY KEY AUTOINCREMENT,
+    name       TEXT     NOT NULL,
+    parent_id  INTEGER  NOT NULL REFERENCES directories(id),
+    owner_id   INTEGER  NOT NULL REFERENCES users(id),
+    path       TEXT     NOT NULL,
+    created_at DATETIME NOT NULL,
     UNIQUE (parent_id, name),
     UNIQUE (path)
 );
 
 CREATE TABLE rooms (
-    id           VARCHAR(36)  PRIMARY KEY,
-    name         VARCHAR(100) NOT NULL,
-    directory_id VARCHAR(36)  NOT NULL REFERENCES directories(id),
-    owner_id     VARCHAR(36)  NOT NULL REFERENCES users(id),
-    path         TEXT         NOT NULL,
-    created_at   TIMESTAMP    NOT NULL,
+    id           INTEGER  PRIMARY KEY AUTOINCREMENT,
+    name         TEXT     NOT NULL,
+    directory_id INTEGER  NOT NULL REFERENCES directories(id),
+    owner_id     INTEGER  NOT NULL REFERENCES users(id),
+    path         TEXT     NOT NULL,
+    created_at   DATETIME NOT NULL,
     UNIQUE (directory_id, name),
     UNIQUE (path)
 );
 
 CREATE TABLE messages (
-    id         VARCHAR(36) PRIMARY KEY,
-    room_id    VARCHAR(36) NOT NULL REFERENCES rooms(id),
-    user_id    VARCHAR(36) NOT NULL REFERENCES users(id),
-    content    TEXT        NOT NULL,
-    created_at TIMESTAMP   NOT NULL,
-    INDEX (room_id, created_at DESC)
+    id         INTEGER  PRIMARY KEY AUTOINCREMENT,
+    room_id    INTEGER  NOT NULL REFERENCES rooms(id),
+    user_id    INTEGER  NOT NULL REFERENCES users(id),
+    content    TEXT     NOT NULL,
+    created_at DATETIME NOT NULL
 );
+CREATE INDEX idx_messages_room_created ON messages (room_id, created_at DESC);
