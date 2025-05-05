@@ -23,40 +23,35 @@ message Status {
   string message = 2;
 }
 
-message FileInfo {
+enum NodeType {
+  ROOM = 0;
+  DIRECTORY = 1;
+}
+
+message NodeInfo {
   string name = 1;
   uint64 size = 2;
-  bool is_dir = 3;
+  NodeType type = 3;
   google.protobuf.Timestamp modified = 4;
 }
 
 message CreateFileRequest {
   string path = 1;
-  string owner_id = 2;
+  string owner_token = 2;
 }
 
 message CreateFileResponse { Status status = 1; }
 
-message ChangeDirectoryRequest {
-  string path = 1;
-  string owner_id = 2;
-}
-
-message ChangeDirectoryResponse {
-  Status status = 1;
-  string new_cwd = 2;
-}
-
 message CreateDirectoryRequest {
   string path = 1;
-  string owner_id = 2;
+  string owner_token = 2;
 }
 
 message CreateDirectoryResponse { Status status = 1; }
 
 message DeletePathRequest {
   string path = 1;
-  string owner_id = 2;
+  string owner_token = 2;
 }
 
 message DeletePathResponse { Status status = 1; }
@@ -64,7 +59,7 @@ message DeletePathResponse { Status status = 1; }
 message CopyPathRequest {
   string source_path = 1;
   string destination_path = 2;
-  string owner_id = 3;
+  string owner_token = 3;
 }
 
 message CopyPathResponse { Status status = 1; }
@@ -72,28 +67,22 @@ message CopyPathResponse { Status status = 1; }
 message MovePathRequest {
   string source_path = 1;
   string destination_path = 2;
-  string owner_id = 3;
+  string owner_token = 3;
 }
 
 message MovePathResponse { Status status = 1; }
 
-message ListNodesRequest {
-  string path = 1;
-  bool show_all = 2;
-  bool long_format = 3;
-}
+message ListNodesRequest { string path = 1; }
 
-message ListNodesResponse { repeated FileInfo entries = 1; }
+message ListNodesResponse { repeated NodeInfo entries = 1; }
 
 message GetMessageRequest { string path = 1; }
 
 message GetMessageResponse { bytes content = 1; }
 
-message GetCurrentDirectoryResponse { string cwd = 1; }
-
 message StreamMessageRequest {
   string path = 1;
-  uint32 initial_lines = 2;
+  string initi_token = 2;
   bool follow = 3;
 }
 
@@ -118,8 +107,7 @@ message MessageMatch {
 message WriteMessageRequest {
   string text_content = 1;
   string destination_path = 2;
-  bool append = 3;
-  string writer_id = 4;
+  string owner_token = 3;
 }
 
 message WriteMessageResponse { Status status = 1; }

@@ -21,20 +21,20 @@ func NewUsecase(repo Repository) adaptor.Usecase {
 	}
 }
 
-func (u Usecase) CreateDirectory(path domain.Path, ownerID int) error {
+func (u Usecase) CreateDirectory(path domain.Path, ownerToken string) error {
 	parentNode, err := u.repo.GetNodeByPath(path.Parent())
 	if err != nil {
 		return fmt.Errorf("error getting parent directory: %w", err)
 	}
-	return u.repo.CreateDirectory(parentNode.ID, path.NodeName(), ownerID)
+	return u.repo.CreateDirectory(parentNode.ID, path.Parent().String(), path.NodeName(), ownerToken)
 }
 
-func (u Usecase) DeletePath(path domain.Path, ownerID int) error {
+func (u Usecase) DeletePath(path domain.Path, ownerToken string) error {
 	node, err := u.repo.GetNodeByPath(path)
 	if err != nil {
 		return fmt.Errorf("error getting path: %w", err)
 	}
-	if node.OwnerID != ownerID {
+	if node.OwnerToken != ownerToken {
 		return fmt.Errorf("permission denied")
 	}
 
@@ -48,7 +48,7 @@ func (u Usecase) DeletePath(path domain.Path, ownerID int) error {
 	}
 }
 
-func (u Usecase) CopyPath(srcPath, dstPath domain.Path, ownerID int) error {
+func (u Usecase) CopyPath(srcPath, dstPath domain.Path, ownerToken string) error {
 	srcNode, err := u.repo.GetNodeByPath(srcPath)
 	if err != nil {
 		return fmt.Errorf("error getting source path: %w", err)
@@ -56,7 +56,7 @@ func (u Usecase) CopyPath(srcPath, dstPath domain.Path, ownerID int) error {
 	if srcNode.Type != domain.NodeTypeRoom {
 		return fmt.Errorf("source path is not a file")
 	}
-	if srcNode.OwnerID != ownerID {
+	if srcNode.OwnerToken != ownerToken {
 		return fmt.Errorf("permission denied")
 	}
 	dstParentNode, err := u.repo.GetNodeByPath(dstPath.Parent())
@@ -66,7 +66,7 @@ func (u Usecase) CopyPath(srcPath, dstPath domain.Path, ownerID int) error {
 	if dstParentNode.Type != domain.NodeTypeDirectory {
 		return fmt.Errorf("source path is not a file")
 	}
-	if dstParentNode.OwnerID != ownerID {
+	if dstParentNode.OwnerToken != ownerToken {
 		return fmt.Errorf("permission denied")
 	}
 	dstNode, err := u.repo.GetNodeByPath(dstPath)
@@ -77,13 +77,13 @@ func (u Usecase) CopyPath(srcPath, dstPath domain.Path, ownerID int) error {
 	if dstNode.Type == domain.NodeTypeRoom {
 		rename = dstNode.Name
 	}
-	if err := u.repo.CreateExistRoom(srcNode.ID, dstParentNode.ID, rename); err != nil {
+	if err := u.repo.CreateExistRoom(srcNode.ID, dstParentNode.ID, dstPath.Parent().String(), rename); err != nil {
 		return fmt.Errorf("error copying file: %w", err)
 	}
 	return nil
 }
 
-func (u Usecase) MovePath(srcPath, dstPath domain.Path, ownerID int) error {
+func (u Usecase) MovePath(srcPath, dstPath domain.Path, ownerToken string) error {
 	srcNode, err := u.repo.GetNodeByPath(srcPath)
 	if err != nil {
 		return fmt.Errorf("error getting source path: %w", err)
@@ -91,7 +91,7 @@ func (u Usecase) MovePath(srcPath, dstPath domain.Path, ownerID int) error {
 	if srcNode.Type != domain.NodeTypeRoom {
 		return fmt.Errorf("source path is not a file")
 	}
-	if srcNode.OwnerID != ownerID {
+	if srcNode.OwnerToken != ownerToken {
 		return fmt.Errorf("permission denied")
 	}
 	dstParentNode, err := u.repo.GetNodeByPath(dstPath.Parent())
@@ -101,7 +101,7 @@ func (u Usecase) MovePath(srcPath, dstPath domain.Path, ownerID int) error {
 	if dstParentNode.Type != domain.NodeTypeDirectory {
 		return fmt.Errorf("source path is not a file")
 	}
-	if dstParentNode.OwnerID != ownerID {
+	if dstParentNode.OwnerToken != ownerToken {
 		return fmt.Errorf("permission denied")
 	}
 	dstNode, err := u.repo.GetNodeByPath(dstPath)
@@ -118,7 +118,7 @@ func (u Usecase) MovePath(srcPath, dstPath domain.Path, ownerID int) error {
 	if dstNode.Type == domain.NodeTypeRoom {
 		rename = dstNode.Name
 	}
-	if err := u.repo.UpdateRoom(srcNode.ID, dstParentNode.ID, rename); err != nil {
+	if err := u.repo.UpdateRoom(srcNode.ID, dstParentNode.ID, dstPath.Parent().String(), rename); err != nil {
 		return fmt.Errorf("error moving file: %w", err)
 	}
 	return nil

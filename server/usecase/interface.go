@@ -10,15 +10,15 @@ type Repository interface {
 	ListNodes(parentDirID int) ([]domain.Node, error)
 
 	// Directory
-	CreateDirectory(parentDirID int, name string, ownerID int) error
+	CreateDirectory(parentDirID int, parentDirPath, name string, ownerToken string) error
 	DeleteDirectory(dirID int) error
-	UpdateDirectory(srcDirID, dstDirID int, name string) error
+	UpdateDirectory(srcDirID, dstDirID int, dstDirPath, name string) error
 
 	// Room
-	CreateRoom(parentDirID int, name string) error
-	CreateExistRoom(roomID, dstDirID int, name string) error
+	CreateRoom(parentDirID int, parentDirPath, name string) error
+	CreateExistRoom(roomID, dstDirID int, dstDirPath, name string) error
 	DeleteRoom(roomID int) error
-	UpdateRoom(srcRoomID, dstDirID int, name string) error
+	UpdateRoom(srcRoomID, dstDirID int, dstDirPath, name string) error
 
 	// Message
 	CreateMessage(roomID, userID int, message string) error
