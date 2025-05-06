@@ -1,5 +1,43 @@
 package main
 
-func main() {
+import (
+	"database/sql"
+	"fmt"
+	"log"
+	"net"
 
+	_ "github.com/mattn/go-sqlite3"
+	pb "github.com/ponyo877/chatsh/grpc"
+	"github.com/ponyo877/chatsh/server/adaptor"
+	"github.com/ponyo877/chatsh/server/repository"
+	"github.com/ponyo877/chatsh/server/usecase"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
+)
+
+var (
+	port int = 50051
+)
+
+func main() {
+	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+	conn, err := sql.Open("sqlite3", "./example.sql")
+	if err != nil {
+		log.Fatalf("failed to open db: %v", err)
+	}
+	defer conn.Close()
+	rp := repository.NewRepository(conn)
+	uc := usecase.NewUsecase(rp)
+	ad := adaptor.NewAdaptor(uc)
+	s := grpc.NewServer()
+	pb.RegisterChatshServiceServer(s, ad)
+	reflection.Register(s)
+
+	log.Printf("Server is running on port %d", port)
+	if err := s.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
 }

@@ -19,21 +19,21 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	FileSystemService_CreateDirectory_FullMethodName = "/fs.FileSystemService/CreateDirectory"
-	FileSystemService_DeletePath_FullMethodName      = "/fs.FileSystemService/DeletePath"
-	FileSystemService_CopyPath_FullMethodName        = "/fs.FileSystemService/CopyPath"
-	FileSystemService_MovePath_FullMethodName        = "/fs.FileSystemService/MovePath"
-	FileSystemService_ListNodes_FullMethodName       = "/fs.FileSystemService/ListNodes"
-	FileSystemService_ListMessages_FullMethodName    = "/fs.FileSystemService/ListMessages"
-	FileSystemService_StreamMessage_FullMethodName   = "/fs.FileSystemService/StreamMessage"
-	FileSystemService_SearchMessage_FullMethodName   = "/fs.FileSystemService/SearchMessage"
-	FileSystemService_WriteMessage_FullMethodName    = "/fs.FileSystemService/WriteMessage"
+	ChatshService_CreateDirectory_FullMethodName = "/fs.ChatshService/CreateDirectory"
+	ChatshService_DeletePath_FullMethodName      = "/fs.ChatshService/DeletePath"
+	ChatshService_CopyPath_FullMethodName        = "/fs.ChatshService/CopyPath"
+	ChatshService_MovePath_FullMethodName        = "/fs.ChatshService/MovePath"
+	ChatshService_ListNodes_FullMethodName       = "/fs.ChatshService/ListNodes"
+	ChatshService_ListMessages_FullMethodName    = "/fs.ChatshService/ListMessages"
+	ChatshService_StreamMessage_FullMethodName   = "/fs.ChatshService/StreamMessage"
+	ChatshService_SearchMessage_FullMethodName   = "/fs.ChatshService/SearchMessage"
+	ChatshService_WriteMessage_FullMethodName    = "/fs.ChatshService/WriteMessage"
 )
 
-// FileSystemServiceClient is the client API for FileSystemService service.
+// ChatshServiceClient is the client API for ChatshService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type FileSystemServiceClient interface {
+type ChatshServiceClient interface {
 	CreateDirectory(ctx context.Context, in *CreateDirectoryRequest, opts ...grpc.CallOption) (*CreateDirectoryResponse, error)
 	DeletePath(ctx context.Context, in *DeletePathRequest, opts ...grpc.CallOption) (*DeletePathResponse, error)
 	CopyPath(ctx context.Context, in *CopyPathRequest, opts ...grpc.CallOption) (*CopyPathResponse, error)
@@ -45,77 +45,77 @@ type FileSystemServiceClient interface {
 	WriteMessage(ctx context.Context, in *WriteMessageRequest, opts ...grpc.CallOption) (*WriteMessageResponse, error)
 }
 
-type fileSystemServiceClient struct {
+type chatshServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewFileSystemServiceClient(cc grpc.ClientConnInterface) FileSystemServiceClient {
-	return &fileSystemServiceClient{cc}
+func NewChatshServiceClient(cc grpc.ClientConnInterface) ChatshServiceClient {
+	return &chatshServiceClient{cc}
 }
 
-func (c *fileSystemServiceClient) CreateDirectory(ctx context.Context, in *CreateDirectoryRequest, opts ...grpc.CallOption) (*CreateDirectoryResponse, error) {
+func (c *chatshServiceClient) CreateDirectory(ctx context.Context, in *CreateDirectoryRequest, opts ...grpc.CallOption) (*CreateDirectoryResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateDirectoryResponse)
-	err := c.cc.Invoke(ctx, FileSystemService_CreateDirectory_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, ChatshService_CreateDirectory_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *fileSystemServiceClient) DeletePath(ctx context.Context, in *DeletePathRequest, opts ...grpc.CallOption) (*DeletePathResponse, error) {
+func (c *chatshServiceClient) DeletePath(ctx context.Context, in *DeletePathRequest, opts ...grpc.CallOption) (*DeletePathResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeletePathResponse)
-	err := c.cc.Invoke(ctx, FileSystemService_DeletePath_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, ChatshService_DeletePath_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *fileSystemServiceClient) CopyPath(ctx context.Context, in *CopyPathRequest, opts ...grpc.CallOption) (*CopyPathResponse, error) {
+func (c *chatshServiceClient) CopyPath(ctx context.Context, in *CopyPathRequest, opts ...grpc.CallOption) (*CopyPathResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CopyPathResponse)
-	err := c.cc.Invoke(ctx, FileSystemService_CopyPath_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, ChatshService_CopyPath_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *fileSystemServiceClient) MovePath(ctx context.Context, in *MovePathRequest, opts ...grpc.CallOption) (*MovePathResponse, error) {
+func (c *chatshServiceClient) MovePath(ctx context.Context, in *MovePathRequest, opts ...grpc.CallOption) (*MovePathResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(MovePathResponse)
-	err := c.cc.Invoke(ctx, FileSystemService_MovePath_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, ChatshService_MovePath_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *fileSystemServiceClient) ListNodes(ctx context.Context, in *ListNodesRequest, opts ...grpc.CallOption) (*ListNodesResponse, error) {
+func (c *chatshServiceClient) ListNodes(ctx context.Context, in *ListNodesRequest, opts ...grpc.CallOption) (*ListNodesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListNodesResponse)
-	err := c.cc.Invoke(ctx, FileSystemService_ListNodes_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, ChatshService_ListNodes_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *fileSystemServiceClient) ListMessages(ctx context.Context, in *ListMessagesRequest, opts ...grpc.CallOption) (*ListMessagesResponse, error) {
+func (c *chatshServiceClient) ListMessages(ctx context.Context, in *ListMessagesRequest, opts ...grpc.CallOption) (*ListMessagesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListMessagesResponse)
-	err := c.cc.Invoke(ctx, FileSystemService_ListMessages_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, ChatshService_ListMessages_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *fileSystemServiceClient) StreamMessage(ctx context.Context, in *StreamMessageRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[MessageChunk], error) {
+func (c *chatshServiceClient) StreamMessage(ctx context.Context, in *StreamMessageRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[MessageChunk], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &FileSystemService_ServiceDesc.Streams[0], FileSystemService_StreamMessage_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &ChatshService_ServiceDesc.Streams[0], ChatshService_StreamMessage_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -130,32 +130,32 @@ func (c *fileSystemServiceClient) StreamMessage(ctx context.Context, in *StreamM
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type FileSystemService_StreamMessageClient = grpc.ServerStreamingClient[MessageChunk]
+type ChatshService_StreamMessageClient = grpc.ServerStreamingClient[MessageChunk]
 
-func (c *fileSystemServiceClient) SearchMessage(ctx context.Context, in *SearchMessageRequest, opts ...grpc.CallOption) (*SearchMessageResponse, error) {
+func (c *chatshServiceClient) SearchMessage(ctx context.Context, in *SearchMessageRequest, opts ...grpc.CallOption) (*SearchMessageResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SearchMessageResponse)
-	err := c.cc.Invoke(ctx, FileSystemService_SearchMessage_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, ChatshService_SearchMessage_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *fileSystemServiceClient) WriteMessage(ctx context.Context, in *WriteMessageRequest, opts ...grpc.CallOption) (*WriteMessageResponse, error) {
+func (c *chatshServiceClient) WriteMessage(ctx context.Context, in *WriteMessageRequest, opts ...grpc.CallOption) (*WriteMessageResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(WriteMessageResponse)
-	err := c.cc.Invoke(ctx, FileSystemService_WriteMessage_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, ChatshService_WriteMessage_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// FileSystemServiceServer is the server API for FileSystemService service.
-// All implementations must embed UnimplementedFileSystemServiceServer
+// ChatshServiceServer is the server API for ChatshService service.
+// All implementations must embed UnimplementedChatshServiceServer
 // for forward compatibility.
-type FileSystemServiceServer interface {
+type ChatshServiceServer interface {
 	CreateDirectory(context.Context, *CreateDirectoryRequest) (*CreateDirectoryResponse, error)
 	DeletePath(context.Context, *DeletePathRequest) (*DeletePathResponse, error)
 	CopyPath(context.Context, *CopyPathRequest) (*CopyPathResponse, error)
@@ -165,263 +165,263 @@ type FileSystemServiceServer interface {
 	StreamMessage(*StreamMessageRequest, grpc.ServerStreamingServer[MessageChunk]) error
 	SearchMessage(context.Context, *SearchMessageRequest) (*SearchMessageResponse, error)
 	WriteMessage(context.Context, *WriteMessageRequest) (*WriteMessageResponse, error)
-	mustEmbedUnimplementedFileSystemServiceServer()
+	mustEmbedUnimplementedChatshServiceServer()
 }
 
-// UnimplementedFileSystemServiceServer must be embedded to have
+// UnimplementedChatshServiceServer must be embedded to have
 // forward compatible implementations.
 //
 // NOTE: this should be embedded by value instead of pointer to avoid a nil
 // pointer dereference when methods are called.
-type UnimplementedFileSystemServiceServer struct{}
+type UnimplementedChatshServiceServer struct{}
 
-func (UnimplementedFileSystemServiceServer) CreateDirectory(context.Context, *CreateDirectoryRequest) (*CreateDirectoryResponse, error) {
+func (UnimplementedChatshServiceServer) CreateDirectory(context.Context, *CreateDirectoryRequest) (*CreateDirectoryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateDirectory not implemented")
 }
-func (UnimplementedFileSystemServiceServer) DeletePath(context.Context, *DeletePathRequest) (*DeletePathResponse, error) {
+func (UnimplementedChatshServiceServer) DeletePath(context.Context, *DeletePathRequest) (*DeletePathResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeletePath not implemented")
 }
-func (UnimplementedFileSystemServiceServer) CopyPath(context.Context, *CopyPathRequest) (*CopyPathResponse, error) {
+func (UnimplementedChatshServiceServer) CopyPath(context.Context, *CopyPathRequest) (*CopyPathResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CopyPath not implemented")
 }
-func (UnimplementedFileSystemServiceServer) MovePath(context.Context, *MovePathRequest) (*MovePathResponse, error) {
+func (UnimplementedChatshServiceServer) MovePath(context.Context, *MovePathRequest) (*MovePathResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MovePath not implemented")
 }
-func (UnimplementedFileSystemServiceServer) ListNodes(context.Context, *ListNodesRequest) (*ListNodesResponse, error) {
+func (UnimplementedChatshServiceServer) ListNodes(context.Context, *ListNodesRequest) (*ListNodesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListNodes not implemented")
 }
-func (UnimplementedFileSystemServiceServer) ListMessages(context.Context, *ListMessagesRequest) (*ListMessagesResponse, error) {
+func (UnimplementedChatshServiceServer) ListMessages(context.Context, *ListMessagesRequest) (*ListMessagesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListMessages not implemented")
 }
-func (UnimplementedFileSystemServiceServer) StreamMessage(*StreamMessageRequest, grpc.ServerStreamingServer[MessageChunk]) error {
+func (UnimplementedChatshServiceServer) StreamMessage(*StreamMessageRequest, grpc.ServerStreamingServer[MessageChunk]) error {
 	return status.Errorf(codes.Unimplemented, "method StreamMessage not implemented")
 }
-func (UnimplementedFileSystemServiceServer) SearchMessage(context.Context, *SearchMessageRequest) (*SearchMessageResponse, error) {
+func (UnimplementedChatshServiceServer) SearchMessage(context.Context, *SearchMessageRequest) (*SearchMessageResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchMessage not implemented")
 }
-func (UnimplementedFileSystemServiceServer) WriteMessage(context.Context, *WriteMessageRequest) (*WriteMessageResponse, error) {
+func (UnimplementedChatshServiceServer) WriteMessage(context.Context, *WriteMessageRequest) (*WriteMessageResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method WriteMessage not implemented")
 }
-func (UnimplementedFileSystemServiceServer) mustEmbedUnimplementedFileSystemServiceServer() {}
-func (UnimplementedFileSystemServiceServer) testEmbeddedByValue()                           {}
+func (UnimplementedChatshServiceServer) mustEmbedUnimplementedChatshServiceServer() {}
+func (UnimplementedChatshServiceServer) testEmbeddedByValue()                       {}
 
-// UnsafeFileSystemServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to FileSystemServiceServer will
+// UnsafeChatshServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ChatshServiceServer will
 // result in compilation errors.
-type UnsafeFileSystemServiceServer interface {
-	mustEmbedUnimplementedFileSystemServiceServer()
+type UnsafeChatshServiceServer interface {
+	mustEmbedUnimplementedChatshServiceServer()
 }
 
-func RegisterFileSystemServiceServer(s grpc.ServiceRegistrar, srv FileSystemServiceServer) {
-	// If the following call pancis, it indicates UnimplementedFileSystemServiceServer was
+func RegisterChatshServiceServer(s grpc.ServiceRegistrar, srv ChatshServiceServer) {
+	// If the following call pancis, it indicates UnimplementedChatshServiceServer was
 	// embedded by pointer and is nil.  This will cause panics if an
 	// unimplemented method is ever invoked, so we test this at initialization
 	// time to prevent it from happening at runtime later due to I/O.
 	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
 		t.testEmbeddedByValue()
 	}
-	s.RegisterService(&FileSystemService_ServiceDesc, srv)
+	s.RegisterService(&ChatshService_ServiceDesc, srv)
 }
 
-func _FileSystemService_CreateDirectory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ChatshService_CreateDirectory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateDirectoryRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FileSystemServiceServer).CreateDirectory(ctx, in)
+		return srv.(ChatshServiceServer).CreateDirectory(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: FileSystemService_CreateDirectory_FullMethodName,
+		FullMethod: ChatshService_CreateDirectory_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FileSystemServiceServer).CreateDirectory(ctx, req.(*CreateDirectoryRequest))
+		return srv.(ChatshServiceServer).CreateDirectory(ctx, req.(*CreateDirectoryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _FileSystemService_DeletePath_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ChatshService_DeletePath_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeletePathRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FileSystemServiceServer).DeletePath(ctx, in)
+		return srv.(ChatshServiceServer).DeletePath(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: FileSystemService_DeletePath_FullMethodName,
+		FullMethod: ChatshService_DeletePath_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FileSystemServiceServer).DeletePath(ctx, req.(*DeletePathRequest))
+		return srv.(ChatshServiceServer).DeletePath(ctx, req.(*DeletePathRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _FileSystemService_CopyPath_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ChatshService_CopyPath_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CopyPathRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FileSystemServiceServer).CopyPath(ctx, in)
+		return srv.(ChatshServiceServer).CopyPath(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: FileSystemService_CopyPath_FullMethodName,
+		FullMethod: ChatshService_CopyPath_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FileSystemServiceServer).CopyPath(ctx, req.(*CopyPathRequest))
+		return srv.(ChatshServiceServer).CopyPath(ctx, req.(*CopyPathRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _FileSystemService_MovePath_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ChatshService_MovePath_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(MovePathRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FileSystemServiceServer).MovePath(ctx, in)
+		return srv.(ChatshServiceServer).MovePath(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: FileSystemService_MovePath_FullMethodName,
+		FullMethod: ChatshService_MovePath_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FileSystemServiceServer).MovePath(ctx, req.(*MovePathRequest))
+		return srv.(ChatshServiceServer).MovePath(ctx, req.(*MovePathRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _FileSystemService_ListNodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ChatshService_ListNodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListNodesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FileSystemServiceServer).ListNodes(ctx, in)
+		return srv.(ChatshServiceServer).ListNodes(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: FileSystemService_ListNodes_FullMethodName,
+		FullMethod: ChatshService_ListNodes_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FileSystemServiceServer).ListNodes(ctx, req.(*ListNodesRequest))
+		return srv.(ChatshServiceServer).ListNodes(ctx, req.(*ListNodesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _FileSystemService_ListMessages_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ChatshService_ListMessages_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListMessagesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FileSystemServiceServer).ListMessages(ctx, in)
+		return srv.(ChatshServiceServer).ListMessages(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: FileSystemService_ListMessages_FullMethodName,
+		FullMethod: ChatshService_ListMessages_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FileSystemServiceServer).ListMessages(ctx, req.(*ListMessagesRequest))
+		return srv.(ChatshServiceServer).ListMessages(ctx, req.(*ListMessagesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _FileSystemService_StreamMessage_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _ChatshService_StreamMessage_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(StreamMessageRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(FileSystemServiceServer).StreamMessage(m, &grpc.GenericServerStream[StreamMessageRequest, MessageChunk]{ServerStream: stream})
+	return srv.(ChatshServiceServer).StreamMessage(m, &grpc.GenericServerStream[StreamMessageRequest, MessageChunk]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type FileSystemService_StreamMessageServer = grpc.ServerStreamingServer[MessageChunk]
+type ChatshService_StreamMessageServer = grpc.ServerStreamingServer[MessageChunk]
 
-func _FileSystemService_SearchMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ChatshService_SearchMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SearchMessageRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FileSystemServiceServer).SearchMessage(ctx, in)
+		return srv.(ChatshServiceServer).SearchMessage(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: FileSystemService_SearchMessage_FullMethodName,
+		FullMethod: ChatshService_SearchMessage_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FileSystemServiceServer).SearchMessage(ctx, req.(*SearchMessageRequest))
+		return srv.(ChatshServiceServer).SearchMessage(ctx, req.(*SearchMessageRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _FileSystemService_WriteMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ChatshService_WriteMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(WriteMessageRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FileSystemServiceServer).WriteMessage(ctx, in)
+		return srv.(ChatshServiceServer).WriteMessage(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: FileSystemService_WriteMessage_FullMethodName,
+		FullMethod: ChatshService_WriteMessage_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FileSystemServiceServer).WriteMessage(ctx, req.(*WriteMessageRequest))
+		return srv.(ChatshServiceServer).WriteMessage(ctx, req.(*WriteMessageRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// FileSystemService_ServiceDesc is the grpc.ServiceDesc for FileSystemService service.
+// ChatshService_ServiceDesc is the grpc.ServiceDesc for ChatshService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var FileSystemService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "fs.FileSystemService",
-	HandlerType: (*FileSystemServiceServer)(nil),
+var ChatshService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "fs.ChatshService",
+	HandlerType: (*ChatshServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "CreateDirectory",
-			Handler:    _FileSystemService_CreateDirectory_Handler,
+			Handler:    _ChatshService_CreateDirectory_Handler,
 		},
 		{
 			MethodName: "DeletePath",
-			Handler:    _FileSystemService_DeletePath_Handler,
+			Handler:    _ChatshService_DeletePath_Handler,
 		},
 		{
 			MethodName: "CopyPath",
-			Handler:    _FileSystemService_CopyPath_Handler,
+			Handler:    _ChatshService_CopyPath_Handler,
 		},
 		{
 			MethodName: "MovePath",
-			Handler:    _FileSystemService_MovePath_Handler,
+			Handler:    _ChatshService_MovePath_Handler,
 		},
 		{
 			MethodName: "ListNodes",
-			Handler:    _FileSystemService_ListNodes_Handler,
+			Handler:    _ChatshService_ListNodes_Handler,
 		},
 		{
 			MethodName: "ListMessages",
-			Handler:    _FileSystemService_ListMessages_Handler,
+			Handler:    _ChatshService_ListMessages_Handler,
 		},
 		{
 			MethodName: "SearchMessage",
-			Handler:    _FileSystemService_SearchMessage_Handler,
+			Handler:    _ChatshService_SearchMessage_Handler,
 		},
 		{
 			MethodName: "WriteMessage",
-			Handler:    _FileSystemService_WriteMessage_Handler,
+			Handler:    _ChatshService_WriteMessage_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "StreamMessage",
-			Handler:       _FileSystemService_StreamMessage_Handler,
+			Handler:       _ChatshService_StreamMessage_Handler,
 			ServerStreams: true,
 		},
 	},

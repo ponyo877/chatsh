@@ -1,17 +1,18 @@
 package adaptor
 
 import (
-	"context" // Add errors package
-	"log"     // Add log package
+	"context"
+	"log"
 
 	pb "github.com/ponyo877/chatsh/grpc"
-	"github.com/ponyo877/chatsh/server/domain"           // Add domain package
-	"google.golang.org/protobuf/types/known/timestamppb" // Add timestamppb package
+	"github.com/ponyo877/chatsh/server/domain"
+	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type Adaptor struct {
-	pb.UnimplementedFileSystemServiceServer // Embed UnimplementedFileSystemServiceServer
-	uc                                      Usecase
+	uc Usecase
+	pb.UnimplementedChatshServiceServer
 }
 
 func NewAdaptor(uc Usecase) *Adaptor {
@@ -86,7 +87,7 @@ func (a *Adaptor) ListNodes(ctx context.Context, in *pb.ListNodesRequest) (*pb.L
 	return &pb.ListNodesResponse{Entries: pbNodeInfos}, nil
 }
 
-func (a *Adaptor) ListMessage(ctx context.Context, in *pb.ListMessagesRequest) (*pb.ListMessagesResponse, error) {
+func (a *Adaptor) ListMessages(ctx context.Context, in *pb.ListMessagesRequest) (*pb.ListMessagesResponse, error) {
 	messages, err := a.uc.ListMessage(domain.NewPath(in.GetPath()))
 	if err != nil {
 		log.Printf("Error listing messages: %v", err)
@@ -129,4 +130,9 @@ func (a *Adaptor) WriteMessage(ctx context.Context, in *pb.WriteMessageRequest) 
 		return &pb.WriteMessageResponse{Status: &pb.Status{Ok: false, Message: err.Error()}}, nil
 	}
 	return &pb.WriteMessageResponse{Status: &pb.Status{Ok: true}}, nil
+}
+
+func (a *Adaptor) StreamMessage(in *pb.StreamMessageRequest, client grpc.ServerStreamingServer[pb.MessageChunk]) error {
+	// TODO: not implemented
+	return nil
 }
