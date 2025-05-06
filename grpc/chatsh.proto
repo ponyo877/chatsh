@@ -7,6 +7,7 @@ option go_package = "./grpc";
 import "google/protobuf/timestamp.proto";
 
 service ChatshService {
+  rpc CreateRoom(CreateRoomRequest) returns (CreateRoomResponse);
   rpc CreateDirectory(CreateDirectoryRequest) returns (CreateDirectoryResponse);
   rpc DeletePath(DeletePathRequest) returns (DeletePathResponse);
   rpc CopyPath(CopyPathRequest) returns (CopyPathResponse);
@@ -42,12 +43,12 @@ message Message {
   google.protobuf.Timestamp created = 3;
 }
 
-message CreateFileRequest {
+message CreateRoomRequest {
   string path = 1;
   string owner_token = 2;
 }
 
-message CreateFileResponse { Status status = 1; }
+message CreateRoomResponse { Status status = 1; }
 
 message CreateDirectoryRequest {
   string path = 1;

@@ -21,6 +21,14 @@ func NewUsecase(repo Repository) adaptor.Usecase {
 	}
 }
 
+func (u Usecase) CreateRoom(path domain.Path, ownerToken string) error {
+	parentNode, err := u.repo.GetNodeByPath(path.Parent())
+	if err != nil {
+		return fmt.Errorf("error getting parent room: %w", err)
+	}
+	return u.repo.CreateRoom(parentNode.ID, path.Parent().String(), path.NodeName(), ownerToken)
+}
+
 func (u Usecase) CreateDirectory(path domain.Path, ownerToken string) error {
 	parentNode, err := u.repo.GetNodeByPath(path.Parent())
 	if err != nil {
@@ -66,9 +74,6 @@ func (u Usecase) CopyPath(srcPath, dstPath domain.Path, ownerToken string) error
 	if dstParentNode.Type != domain.NodeTypeDirectory {
 		return fmt.Errorf("source path is not a file")
 	}
-	if dstParentNode.OwnerToken != ownerToken {
-		return fmt.Errorf("permission denied")
-	}
 	dstNode, err := u.repo.GetNodeByPath(dstPath)
 	if err != nil {
 		return fmt.Errorf("error getting destination path: %w", err)
@@ -100,9 +105,6 @@ func (u Usecase) MovePath(srcPath, dstPath domain.Path, ownerToken string) error
 	}
 	if dstParentNode.Type != domain.NodeTypeDirectory {
 		return fmt.Errorf("source path is not a file")
-	}
-	if dstParentNode.OwnerToken != ownerToken {
-		return fmt.Errorf("permission denied")
 	}
 	dstNode, err := u.repo.GetNodeByPath(dstPath)
 	if err != nil {
@@ -148,7 +150,7 @@ func (u Usecase) ListMessage(path domain.Path) ([]domain.Message, error) {
 	if node.Type != domain.NodeTypeRoom {
 		return nil, fmt.Errorf("path is not a room")
 	}
-	messages, err := u.repo.ListMessages(node.ID, 0, messageLimit)
+	messages, err := u.repo.ListMessages(node.ID, messageLimit, 0)
 	if err != nil {
 		return nil, fmt.Errorf("error listing messages: %w", err)
 	}

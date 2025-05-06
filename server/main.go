@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"regexp"
 
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/mattn/go-sqlite3"
 	pb "github.com/ponyo877/chatsh/grpc"
 	"github.com/ponyo877/chatsh/server/adaptor"
 	"github.com/ponyo877/chatsh/server/repository"
@@ -19,12 +20,22 @@ var (
 	port int = 50051
 )
 
+func regex(re, s string) (bool, error) {
+	return regexp.MatchString(re, s)
+}
+
 func main() {
 	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	conn, err := sql.Open("sqlite3", "./example.sql")
+	sql.Register("sqlite3_with_go_func",
+		&sqlite3.SQLiteDriver{
+			ConnectHook: func(conn *sqlite3.SQLiteConn) error {
+				return conn.RegisterFunc("regexp", regex, true)
+			},
+		})
+	conn, err := sql.Open("sqlite3_with_go_func", "./chatsh.db")
 	if err != nil {
 		log.Fatalf("failed to open db: %v", err)
 	}

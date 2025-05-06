@@ -4,6 +4,7 @@ import "github.com/ponyo877/chatsh/server/domain"
 
 type Usecase interface {
 	CopyPath(srcPath domain.Path, dstPath domain.Path, ownerTone string) error
+	CreateRoom(path domain.Path, ownerToken string) error
 	CreateDirectory(path domain.Path, ownerToken string) error
 	DeletePath(path domain.Path, ownerTone string) error
 	ListMessage(path domain.Path) ([]domain.Message, error)

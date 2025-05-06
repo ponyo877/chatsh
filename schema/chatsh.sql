@@ -4,7 +4,7 @@ CREATE TABLE users (
     created_at   DATETIME NOT NULL,
     UNIQUE (token)
 );
-CREATE INDEX idx_users_nick ON users (nick);
+CREATE INDEX idx_users_display_name ON users (display_name);
 
 CREATE TABLE directories (
     id          INTEGER  PRIMARY KEY AUTOINCREMENT,

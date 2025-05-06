@@ -19,6 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
+	ChatshService_CreateRoom_FullMethodName      = "/fs.ChatshService/CreateRoom"
 	ChatshService_CreateDirectory_FullMethodName = "/fs.ChatshService/CreateDirectory"
 	ChatshService_DeletePath_FullMethodName      = "/fs.ChatshService/DeletePath"
 	ChatshService_CopyPath_FullMethodName        = "/fs.ChatshService/CopyPath"
@@ -34,6 +35,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ChatshServiceClient interface {
+	CreateRoom(ctx context.Context, in *CreateRoomRequest, opts ...grpc.CallOption) (*CreateRoomResponse, error)
 	CreateDirectory(ctx context.Context, in *CreateDirectoryRequest, opts ...grpc.CallOption) (*CreateDirectoryResponse, error)
 	DeletePath(ctx context.Context, in *DeletePathRequest, opts ...grpc.CallOption) (*DeletePathResponse, error)
 	CopyPath(ctx context.Context, in *CopyPathRequest, opts ...grpc.CallOption) (*CopyPathResponse, error)
@@ -51,6 +53,16 @@ type chatshServiceClient struct {
 
 func NewChatshServiceClient(cc grpc.ClientConnInterface) ChatshServiceClient {
 	return &chatshServiceClient{cc}
+}
+
+func (c *chatshServiceClient) CreateRoom(ctx context.Context, in *CreateRoomRequest, opts ...grpc.CallOption) (*CreateRoomResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateRoomResponse)
+	err := c.cc.Invoke(ctx, ChatshService_CreateRoom_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *chatshServiceClient) CreateDirectory(ctx context.Context, in *CreateDirectoryRequest, opts ...grpc.CallOption) (*CreateDirectoryResponse, error) {
@@ -156,6 +168,7 @@ func (c *chatshServiceClient) WriteMessage(ctx context.Context, in *WriteMessage
 // All implementations must embed UnimplementedChatshServiceServer
 // for forward compatibility.
 type ChatshServiceServer interface {
+	CreateRoom(context.Context, *CreateRoomRequest) (*CreateRoomResponse, error)
 	CreateDirectory(context.Context, *CreateDirectoryRequest) (*CreateDirectoryResponse, error)
 	DeletePath(context.Context, *DeletePathRequest) (*DeletePathResponse, error)
 	CopyPath(context.Context, *CopyPathRequest) (*CopyPathResponse, error)
@@ -175,6 +188,9 @@ type ChatshServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedChatshServiceServer struct{}
 
+func (UnimplementedChatshServiceServer) CreateRoom(context.Context, *CreateRoomRequest) (*CreateRoomResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateRoom not implemented")
+}
 func (UnimplementedChatshServiceServer) CreateDirectory(context.Context, *CreateDirectoryRequest) (*CreateDirectoryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateDirectory not implemented")
 }
@@ -221,6 +237,24 @@ func RegisterChatshServiceServer(s grpc.ServiceRegistrar, srv ChatshServiceServe
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&ChatshService_ServiceDesc, srv)
+}
+
+func _ChatshService_CreateRoom_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateRoomRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatshServiceServer).CreateRoom(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChatshService_CreateRoom_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatshServiceServer).CreateRoom(ctx, req.(*CreateRoomRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _ChatshService_CreateDirectory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -385,6 +419,10 @@ var ChatshService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "fs.ChatshService",
 	HandlerType: (*ChatshServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CreateRoom",
+			Handler:    _ChatshService_CreateRoom_Handler,
+		},
 		{
 			MethodName: "CreateDirectory",
 			Handler:    _ChatshService_CreateDirectory_Handler,

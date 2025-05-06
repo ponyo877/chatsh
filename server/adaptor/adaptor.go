@@ -37,6 +37,15 @@ func toPbNodeInfo(node domain.Node) *pb.NodeInfo {
 	}
 }
 
+func (a *Adaptor) CreateRoom(ctx context.Context, in *pb.CreateRoomRequest) (*pb.CreateRoomResponse, error) {
+	err := a.uc.CreateRoom(domain.NewPath(in.GetPath()), in.GetOwnerToken())
+	if err != nil {
+		log.Printf("Error creating room: %v", err)
+		return &pb.CreateRoomResponse{Status: &pb.Status{Ok: false, Message: err.Error()}}, nil
+	}
+	return &pb.CreateRoomResponse{Status: &pb.Status{Ok: true}}, nil
+}
+
 func (a *Adaptor) CreateDirectory(ctx context.Context, in *pb.CreateDirectoryRequest) (*pb.CreateDirectoryResponse, error) {
 	err := a.uc.CreateDirectory(domain.NewPath(in.GetPath()), in.GetOwnerToken())
 	if err != nil {

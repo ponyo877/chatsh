@@ -35,7 +35,7 @@ func (r *Repository) GetNodeByPath(path domain.Path) (domain.Node, error) {
 			u.display_name,
 			d.created_at
 		FROM directories d
-		JOIN users u ON d.owner_token = u.owner_token
+		JOIN users u ON d.owner_token = u.token
 		WHERE d.path = $1
 		UNION ALL
 		SELECT
@@ -45,7 +45,7 @@ func (r *Repository) GetNodeByPath(path domain.Path) (domain.Node, error) {
 			u.display_name,
 			r.created_at
 		FROM rooms r
-		JOIN users u ON r.owner_token = u.owner_token
+		JOIN users u ON r.owner_token = u.token
 		WHERE r.path = $1;
 	`
 
@@ -80,7 +80,7 @@ func (r *Repository) ListNodes(parentDirID int) ([]domain.Node, error) {
 			u.display_name,
 			d.created_at
 		FROM directories d
-		JOIN users u ON d.owner_token = u.owner_token
+		JOIN users u ON d.owner_token = u.token
 		WHERE parent_id = $1
 		UNION ALL
 		SELECT
@@ -91,7 +91,7 @@ func (r *Repository) ListNodes(parentDirID int) ([]domain.Node, error) {
 			u.display_name,
 			r.created_at
 		FROM rooms r
-		JOIN users u ON r.owner_token = u.owner_token
+		JOIN users u ON r.owner_token = u.token
 		WHERE directory_id = $1
 	`
 	rows, err := r.db.Query(query, parentDirID)
@@ -153,10 +153,10 @@ func (r *Repository) UpdateDirectory(srcDirID, dstDirID int, dstDirPath string, 
 	return nil
 }
 
-func (r *Repository) CreateRoom(parentDirID int, parentDirPath, name string) error {
+func (r *Repository) CreateRoom(parentDirID int, parentDirPath, name, ownerToken string) error {
 	newPath := filepath.Join(parentDirPath, name)
-	query := "INSERT INTO rooms (name, directory_id, path, created_at) VALUES (?, ?, ?, ?)"
-	if _, err := r.db.Exec(query, name, parentDirID, newPath, time.Now()); err != nil {
+	query := "INSERT INTO rooms (name, directory_id, path, owner_token, created_at) VALUES (?, ?, ?, ?, ?)"
+	if _, err := r.db.Exec(query, name, parentDirID, newPath, ownerToken, time.Now()); err != nil {
 		return fmt.Errorf("failed to insert room '%s': %w", name, err)
 	}
 	return nil

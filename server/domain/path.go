@@ -34,10 +34,10 @@ func (p Path) NodeName() string {
 }
 
 func (p Path) Parent() Path {
-	if len(p.Components) == 0 {
+	if len(p.Components) <= 1 {
 		return NewPath("/")
 	}
-	parentPath := strings.Join(p.Components[:len(p.Components)-1], "/")
+	parentPath := "/" + strings.Join(p.Components[:len(p.Components)-1], "/")
 	return NewPath(parentPath)
 }
 
