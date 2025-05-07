@@ -1,6 +1,16 @@
 # ✅ List
 grpcurl -plaintext localhost:50051 list
 
+# ✅ GetConfig
+grpcurl -plaintext -import-path . -import-path grpc -proto grpc/chatsh.proto \
+  -d '{"owner_token": "ponyo_auth_token"}' \
+  localhost:50051 fs.ChatshService/GetConfig
+
+# ✅ SetConfig
+grpcurl -plaintext -import-path . -import-path grpc -proto grpc/chatsh.proto \
+  -d '{"display_name": "ponyo877", "owner_token": "ponyo_auth_token"}' \
+  localhost:50051 fs.ChatshService/SetConfig
+
 # ✅ CreateRoom
 grpcurl -plaintext -import-path . -import-path grpc -proto grpc/chatsh.proto \
   -d '{"path": "/etc/test", "owner_token": "your_auth_token"}' \

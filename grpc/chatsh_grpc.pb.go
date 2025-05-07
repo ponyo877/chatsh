@@ -19,6 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
+	ChatshService_GetConfig_FullMethodName       = "/fs.ChatshService/GetConfig"
+	ChatshService_SetConfig_FullMethodName       = "/fs.ChatshService/SetConfig"
 	ChatshService_CreateRoom_FullMethodName      = "/fs.ChatshService/CreateRoom"
 	ChatshService_CreateDirectory_FullMethodName = "/fs.ChatshService/CreateDirectory"
 	ChatshService_DeletePath_FullMethodName      = "/fs.ChatshService/DeletePath"
@@ -35,6 +37,8 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ChatshServiceClient interface {
+	GetConfig(ctx context.Context, in *GetConfigRequest, opts ...grpc.CallOption) (*GetConfigResponse, error)
+	SetConfig(ctx context.Context, in *SetConfigRequest, opts ...grpc.CallOption) (*SetConfigResponse, error)
 	CreateRoom(ctx context.Context, in *CreateRoomRequest, opts ...grpc.CallOption) (*CreateRoomResponse, error)
 	CreateDirectory(ctx context.Context, in *CreateDirectoryRequest, opts ...grpc.CallOption) (*CreateDirectoryResponse, error)
 	DeletePath(ctx context.Context, in *DeletePathRequest, opts ...grpc.CallOption) (*DeletePathResponse, error)
@@ -53,6 +57,26 @@ type chatshServiceClient struct {
 
 func NewChatshServiceClient(cc grpc.ClientConnInterface) ChatshServiceClient {
 	return &chatshServiceClient{cc}
+}
+
+func (c *chatshServiceClient) GetConfig(ctx context.Context, in *GetConfigRequest, opts ...grpc.CallOption) (*GetConfigResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetConfigResponse)
+	err := c.cc.Invoke(ctx, ChatshService_GetConfig_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatshServiceClient) SetConfig(ctx context.Context, in *SetConfigRequest, opts ...grpc.CallOption) (*SetConfigResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetConfigResponse)
+	err := c.cc.Invoke(ctx, ChatshService_SetConfig_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *chatshServiceClient) CreateRoom(ctx context.Context, in *CreateRoomRequest, opts ...grpc.CallOption) (*CreateRoomResponse, error) {
@@ -168,6 +192,8 @@ func (c *chatshServiceClient) WriteMessage(ctx context.Context, in *WriteMessage
 // All implementations must embed UnimplementedChatshServiceServer
 // for forward compatibility.
 type ChatshServiceServer interface {
+	GetConfig(context.Context, *GetConfigRequest) (*GetConfigResponse, error)
+	SetConfig(context.Context, *SetConfigRequest) (*SetConfigResponse, error)
 	CreateRoom(context.Context, *CreateRoomRequest) (*CreateRoomResponse, error)
 	CreateDirectory(context.Context, *CreateDirectoryRequest) (*CreateDirectoryResponse, error)
 	DeletePath(context.Context, *DeletePathRequest) (*DeletePathResponse, error)
@@ -188,6 +214,12 @@ type ChatshServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedChatshServiceServer struct{}
 
+func (UnimplementedChatshServiceServer) GetConfig(context.Context, *GetConfigRequest) (*GetConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetConfig not implemented")
+}
+func (UnimplementedChatshServiceServer) SetConfig(context.Context, *SetConfigRequest) (*SetConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetConfig not implemented")
+}
 func (UnimplementedChatshServiceServer) CreateRoom(context.Context, *CreateRoomRequest) (*CreateRoomResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateRoom not implemented")
 }
@@ -237,6 +269,42 @@ func RegisterChatshServiceServer(s grpc.ServiceRegistrar, srv ChatshServiceServe
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&ChatshService_ServiceDesc, srv)
+}
+
+func _ChatshService_GetConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatshServiceServer).GetConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChatshService_GetConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatshServiceServer).GetConfig(ctx, req.(*GetConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ChatshService_SetConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatshServiceServer).SetConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChatshService_SetConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatshServiceServer).SetConfig(ctx, req.(*SetConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _ChatshService_CreateRoom_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -419,6 +487,14 @@ var ChatshService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "fs.ChatshService",
 	HandlerType: (*ChatshServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetConfig",
+			Handler:    _ChatshService_GetConfig_Handler,
+		},
+		{
+			MethodName: "SetConfig",
+			Handler:    _ChatshService_SetConfig_Handler,
+		},
 		{
 			MethodName: "CreateRoom",
 			Handler:    _ChatshService_CreateRoom_Handler,

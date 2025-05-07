@@ -20,6 +20,27 @@ func NewRepository(db *sql.DB) usecase.Repository {
 	return &Repository{db: db}
 }
 
+func (r *Repository) GetConfig(ownerToken string) (domain.Config, error) {
+	query := "SELECT display_name FROM users WHERE token = ?"
+	var config domain.Config
+	config.OwnerToken = ownerToken
+	if err := r.db.QueryRow(query, config.OwnerToken).Scan(&config.DisplayName); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return domain.Config{}, usecase.ErrNotFound
+		}
+		return domain.Config{}, fmt.Errorf("error querying config: %w", err)
+	}
+	return config, nil
+}
+
+func (r *Repository) CreateConfig(config domain.Config) error {
+	query := "INSERT INTO users (token, display_name, created_at) VALUES (?, ?, ?)"
+	if _, err := r.db.Exec(query, config.OwnerToken, config.DisplayName, time.Now()); err != nil {
+		return fmt.Errorf("error inserting config: %w", err)
+	}
+	return nil
+}
+
 func (r *Repository) GetNodeByPath(path domain.Path) (domain.Node, error) {
 	query := `
 		SELECT

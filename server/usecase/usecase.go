@@ -21,6 +21,21 @@ func NewUsecase(repo Repository) adaptor.Usecase {
 	}
 }
 
+func (u Usecase) GetConfig(ownerToken string) (domain.Config, error) {
+	config, err := u.repo.GetConfig(ownerToken)
+	if err != nil {
+		return domain.Config{}, fmt.Errorf("error getting config: %w", err)
+	}
+	return config, nil
+}
+
+func (u Usecase) SetConfig(config domain.Config) error {
+	if err := u.repo.CreateConfig(config); err != nil {
+		return fmt.Errorf("error setting config: %w", err)
+	}
+	return nil
+}
+
 func (u Usecase) CreateRoom(path domain.Path, ownerToken string) error {
 	parentNode, err := u.repo.GetNodeByPath(path.Parent())
 	if err != nil {

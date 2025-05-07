@@ -7,6 +7,10 @@ import (
 )
 
 type Repository interface {
+	// Config
+	GetConfig(ownerToken string) (domain.Config, error)
+	CreateConfig(config domain.Config) error
+
 	// Node (Directory & Room)
 	GetNodeByPath(path domain.Path) (domain.Node, error)
 	ListNodes(parentDirID int) ([]domain.Node, error)

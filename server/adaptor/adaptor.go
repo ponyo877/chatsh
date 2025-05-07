@@ -37,6 +37,26 @@ func toPbNodeInfo(node domain.Node) *pb.NodeInfo {
 	}
 }
 
+func (a *Adaptor) GetConfig(ctx context.Context, in *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
+	config, err := a.uc.GetConfig(in.GetOwnerToken())
+	if err != nil {
+		log.Printf("Error getting config: %v", err)
+		return nil, err
+	}
+	return &pb.GetConfigResponse{
+		DisplayName: config.DisplayName,
+	}, nil
+}
+
+func (a *Adaptor) SetConfig(ctx context.Context, in *pb.SetConfigRequest) (*pb.SetConfigResponse, error) {
+	config := domain.NewConfig(in.GetDisplayName(), in.GetOwnerToken())
+	if err := a.uc.SetConfig(config); err != nil {
+		log.Printf("Error setting config: %v", err)
+		return &pb.SetConfigResponse{Status: &pb.Status{Ok: false, Message: err.Error()}}, nil
+	}
+	return &pb.SetConfigResponse{Status: &pb.Status{Ok: true}}, nil
+}
+
 func (a *Adaptor) CreateRoom(ctx context.Context, in *pb.CreateRoomRequest) (*pb.CreateRoomResponse, error) {
 	err := a.uc.CreateRoom(domain.NewPath(in.GetPath()), in.GetOwnerToken())
 	if err != nil {
