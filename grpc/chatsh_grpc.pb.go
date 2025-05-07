@@ -19,24 +19,26 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ChatshService_GetConfig_FullMethodName       = "/fs.ChatshService/GetConfig"
-	ChatshService_SetConfig_FullMethodName       = "/fs.ChatshService/SetConfig"
-	ChatshService_CreateRoom_FullMethodName      = "/fs.ChatshService/CreateRoom"
-	ChatshService_CreateDirectory_FullMethodName = "/fs.ChatshService/CreateDirectory"
-	ChatshService_DeletePath_FullMethodName      = "/fs.ChatshService/DeletePath"
-	ChatshService_CopyPath_FullMethodName        = "/fs.ChatshService/CopyPath"
-	ChatshService_MovePath_FullMethodName        = "/fs.ChatshService/MovePath"
-	ChatshService_ListNodes_FullMethodName       = "/fs.ChatshService/ListNodes"
-	ChatshService_ListMessages_FullMethodName    = "/fs.ChatshService/ListMessages"
-	ChatshService_StreamMessage_FullMethodName   = "/fs.ChatshService/StreamMessage"
-	ChatshService_SearchMessage_FullMethodName   = "/fs.ChatshService/SearchMessage"
-	ChatshService_WriteMessage_FullMethodName    = "/fs.ChatshService/WriteMessage"
+	ChatshService_CheckDirectoryExists_FullMethodName = "/fs.ChatshService/CheckDirectoryExists"
+	ChatshService_GetConfig_FullMethodName            = "/fs.ChatshService/GetConfig"
+	ChatshService_SetConfig_FullMethodName            = "/fs.ChatshService/SetConfig"
+	ChatshService_CreateRoom_FullMethodName           = "/fs.ChatshService/CreateRoom"
+	ChatshService_CreateDirectory_FullMethodName      = "/fs.ChatshService/CreateDirectory"
+	ChatshService_DeletePath_FullMethodName           = "/fs.ChatshService/DeletePath"
+	ChatshService_CopyPath_FullMethodName             = "/fs.ChatshService/CopyPath"
+	ChatshService_MovePath_FullMethodName             = "/fs.ChatshService/MovePath"
+	ChatshService_ListNodes_FullMethodName            = "/fs.ChatshService/ListNodes"
+	ChatshService_ListMessages_FullMethodName         = "/fs.ChatshService/ListMessages"
+	ChatshService_StreamMessage_FullMethodName        = "/fs.ChatshService/StreamMessage"
+	ChatshService_SearchMessage_FullMethodName        = "/fs.ChatshService/SearchMessage"
+	ChatshService_WriteMessage_FullMethodName         = "/fs.ChatshService/WriteMessage"
 )
 
 // ChatshServiceClient is the client API for ChatshService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ChatshServiceClient interface {
+	CheckDirectoryExists(ctx context.Context, in *CheckDirectoryExistsRequest, opts ...grpc.CallOption) (*CheckDirectoryExistsResponse, error)
 	GetConfig(ctx context.Context, in *GetConfigRequest, opts ...grpc.CallOption) (*GetConfigResponse, error)
 	SetConfig(ctx context.Context, in *SetConfigRequest, opts ...grpc.CallOption) (*SetConfigResponse, error)
 	CreateRoom(ctx context.Context, in *CreateRoomRequest, opts ...grpc.CallOption) (*CreateRoomResponse, error)
@@ -57,6 +59,16 @@ type chatshServiceClient struct {
 
 func NewChatshServiceClient(cc grpc.ClientConnInterface) ChatshServiceClient {
 	return &chatshServiceClient{cc}
+}
+
+func (c *chatshServiceClient) CheckDirectoryExists(ctx context.Context, in *CheckDirectoryExistsRequest, opts ...grpc.CallOption) (*CheckDirectoryExistsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CheckDirectoryExistsResponse)
+	err := c.cc.Invoke(ctx, ChatshService_CheckDirectoryExists_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *chatshServiceClient) GetConfig(ctx context.Context, in *GetConfigRequest, opts ...grpc.CallOption) (*GetConfigResponse, error) {
@@ -192,6 +204,7 @@ func (c *chatshServiceClient) WriteMessage(ctx context.Context, in *WriteMessage
 // All implementations must embed UnimplementedChatshServiceServer
 // for forward compatibility.
 type ChatshServiceServer interface {
+	CheckDirectoryExists(context.Context, *CheckDirectoryExistsRequest) (*CheckDirectoryExistsResponse, error)
 	GetConfig(context.Context, *GetConfigRequest) (*GetConfigResponse, error)
 	SetConfig(context.Context, *SetConfigRequest) (*SetConfigResponse, error)
 	CreateRoom(context.Context, *CreateRoomRequest) (*CreateRoomResponse, error)
@@ -214,6 +227,9 @@ type ChatshServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedChatshServiceServer struct{}
 
+func (UnimplementedChatshServiceServer) CheckDirectoryExists(context.Context, *CheckDirectoryExistsRequest) (*CheckDirectoryExistsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckDirectoryExists not implemented")
+}
 func (UnimplementedChatshServiceServer) GetConfig(context.Context, *GetConfigRequest) (*GetConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetConfig not implemented")
 }
@@ -269,6 +285,24 @@ func RegisterChatshServiceServer(s grpc.ServiceRegistrar, srv ChatshServiceServe
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&ChatshService_ServiceDesc, srv)
+}
+
+func _ChatshService_CheckDirectoryExists_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckDirectoryExistsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatshServiceServer).CheckDirectoryExists(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChatshService_CheckDirectoryExists_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatshServiceServer).CheckDirectoryExists(ctx, req.(*CheckDirectoryExistsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _ChatshService_GetConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -487,6 +521,10 @@ var ChatshService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "fs.ChatshService",
 	HandlerType: (*ChatshServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CheckDirectoryExists",
+			Handler:    _ChatshService_CheckDirectoryExists_Handler,
+		},
 		{
 			MethodName: "GetConfig",
 			Handler:    _ChatshService_GetConfig_Handler,

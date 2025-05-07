@@ -48,6 +48,15 @@ func (a *Adaptor) GetConfig(ctx context.Context, in *pb.GetConfigRequest) (*pb.G
 	}, nil
 }
 
+func (a *Adaptor) CheckDirectoryExists(ctx context.Context, in *pb.CheckDirectoryExistsRequest) (*pb.CheckDirectoryExistsResponse, error) {
+	exists, err := a.uc.CheckDirectoryExists(domain.NewPath(in.GetPath()))
+	if err != nil {
+		log.Printf("Error checking directory existence: %v", err)
+		return nil, err
+	}
+	return &pb.CheckDirectoryExistsResponse{Exists: exists}, nil
+}
+
 func (a *Adaptor) SetConfig(ctx context.Context, in *pb.SetConfigRequest) (*pb.SetConfigResponse, error) {
 	config := domain.NewConfig(in.GetDisplayName(), in.GetOwnerToken())
 	if err := a.uc.SetConfig(config); err != nil {

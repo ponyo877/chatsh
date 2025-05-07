@@ -20,6 +20,16 @@ func NewRepository(db *sql.DB) usecase.Repository {
 	return &Repository{db: db}
 }
 
+func (r *Repository) CheckDirectoryExists(path domain.Path) (bool, error) {
+	query := "SELECT EXISTS(SELECT 1 FROM directories WHERE path = ?)"
+	var exists bool
+	err := r.db.QueryRow(query, path.String()).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("error checking directory existence: %w", err)
+	}
+	return exists, nil
+}
+
 func (r *Repository) GetConfig(ownerToken string) (domain.Config, error) {
 	query := "SELECT display_name FROM users WHERE token = ?"
 	var config domain.Config

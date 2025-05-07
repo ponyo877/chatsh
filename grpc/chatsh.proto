@@ -7,6 +7,8 @@ option go_package = "./grpc";
 import "google/protobuf/timestamp.proto";
 
 service ChatshService {
+  rpc CheckDirectoryExists(CheckDirectoryExistsRequest)
+      returns (CheckDirectoryExistsResponse);
   rpc GetConfig(GetConfigRequest) returns (GetConfigResponse);
   rpc SetConfig(SetConfigRequest) returns (SetConfigResponse);
   rpc CreateRoom(CreateRoomRequest) returns (CreateRoomResponse);
@@ -44,6 +46,10 @@ message Message {
   string owner_name = 2;
   google.protobuf.Timestamp created = 3;
 }
+
+message CheckDirectoryExistsRequest { string path = 1; }
+
+message CheckDirectoryExistsResponse { bool exists = 1; }
 
 message GetConfigRequest { string owner_token = 2; }
 

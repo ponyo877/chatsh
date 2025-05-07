@@ -3,6 +3,7 @@ package adaptor
 import "github.com/ponyo877/chatsh/server/domain"
 
 type Usecase interface {
+	CheckDirectoryExists(path domain.Path) (bool, error)
 	GetConfig(ownerToken string) (domain.Config, error)
 	SetConfig(config domain.Config) error
 	CopyPath(srcPath domain.Path, dstPath domain.Path, ownerToken string) error

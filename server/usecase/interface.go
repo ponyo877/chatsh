@@ -14,6 +14,7 @@ type Repository interface {
 	// Node (Directory & Room)
 	GetNodeByPath(path domain.Path) (domain.Node, error)
 	ListNodes(parentDirID int) ([]domain.Node, error)
+	CheckDirectoryExists(path domain.Path) (bool, error)
 
 	// Directory
 	CreateDirectory(parentDirID int, parentDirPath, name, ownerToken string) error

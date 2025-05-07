@@ -21,6 +21,10 @@ func NewUsecase(repo Repository) adaptor.Usecase {
 	}
 }
 
+func (u Usecase) CheckDirectoryExists(path domain.Path) (bool, error) {
+	return u.repo.CheckDirectoryExists(path)
+}
+
 func (u Usecase) GetConfig(ownerToken string) (domain.Config, error) {
 	config, err := u.repo.GetConfig(ownerToken)
 	if err != nil {
