@@ -75,14 +75,22 @@ func (u Usecase) CopyPath(srcPath, dstPath domain.Path, ownerToken string) error
 		return fmt.Errorf("source path is not a file")
 	}
 	dstNode, err := u.repo.GetNodeByPath(dstPath)
-	if err != nil {
+	if err != nil && err != ErrNotFound {
 		return fmt.Errorf("error getting destination path: %w", err)
 	}
-	rename := srcNode.Name
-	if dstNode.Type == domain.NodeTypeRoom {
-		rename = dstNode.Name
+	newName := srcNode.Name
+	newDstPath := dstPath.String()
+	newDstDirID := dstNode.ID
+
+	// dst is room type (not exists)
+	if err == ErrNotFound {
+		newName = dstPath.NodeName()
+		newDstPath = dstPath.Parent().String()
+		newDstDirID = dstParentNode.ID
+	} else if dstNode.Type != domain.NodeTypeDirectory {
+		return fmt.Errorf("destination room is already exists")
 	}
-	if err := u.repo.CreateExistRoom(srcNode.ID, dstParentNode.ID, dstPath.Parent().String(), rename); err != nil {
+	if err := u.repo.CreateExistRoom(srcNode.ID, newDstDirID, newDstPath, newName, ownerToken); err != nil {
 		return fmt.Errorf("error copying file: %w", err)
 	}
 	return nil
@@ -107,20 +115,22 @@ func (u Usecase) MovePath(srcPath, dstPath domain.Path, ownerToken string) error
 		return fmt.Errorf("source path is not a file")
 	}
 	dstNode, err := u.repo.GetNodeByPath(dstPath)
-	if err != nil {
+	if err != nil && err != ErrNotFound {
 		return fmt.Errorf("error getting destination path: %w", err)
 	}
-	if dstNode.Type == domain.NodeTypeRoom && dstNode.ID == srcNode.ID {
-		return nil
+	newName := srcNode.Name
+	newDstPath := dstPath.String()
+	newDstDirID := dstNode.ID
+
+	// dst is room type (not exists)
+	if err == ErrNotFound {
+		newName = dstPath.NodeName()
+		newDstPath = dstPath.Parent().String()
+		newDstDirID = dstParentNode.ID
+	} else if dstNode.Type != domain.NodeTypeDirectory {
+		return fmt.Errorf("destination room is already exists")
 	}
-	if dstNode.Type == domain.NodeTypeRoom {
-		return fmt.Errorf("destination path already exists")
-	}
-	rename := srcNode.Name
-	if dstNode.Type == domain.NodeTypeRoom {
-		rename = dstNode.Name
-	}
-	if err := u.repo.UpdateRoom(srcNode.ID, dstParentNode.ID, dstPath.Parent().String(), rename); err != nil {
+	if err := u.repo.UpdateRoom(srcNode.ID, newDstDirID, newDstPath, newName); err != nil {
 		return fmt.Errorf("error moving file: %w", err)
 	}
 	return nil

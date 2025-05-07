@@ -1,6 +1,8 @@
 package usecase
 
 import (
+	"errors"
+
 	"github.com/ponyo877/chatsh/server/domain"
 )
 
@@ -16,7 +18,7 @@ type Repository interface {
 
 	// Room
 	CreateRoom(parentDirID int, parentDirPath, name, ownerToken string) error
-	CreateExistRoom(roomID, dstDirID int, dstDirPath, name string) error
+	CreateExistRoom(roomID, dstDirID int, dstDirPath, name, ownerToken string) error
 	DeleteRoom(roomID int) error
 	UpdateRoom(srcRoomID, dstDirID int, dstDirPath, name string) error
 
@@ -25,3 +27,7 @@ type Repository interface {
 	ListMessages(roomID, limit, offset int) ([]domain.Message, error)
 	ListMessagesByQuery(roomID int, pattern string) ([]domain.Message, error)
 }
+
+var ErrNotFound = errors.New("not found")
+
+var ErrAlreadyExists = errors.New("already exists")

@@ -12,12 +12,6 @@ import (
 	"github.com/ponyo877/chatsh/server/usecase"
 )
 
-// ErrNotFound はリソースが見つからない場合のエラーです。usecase層で定義されているべきですが、便宜上ここで定義します。
-var ErrNotFound = errors.New("not found")
-
-// ErrAlreadyExists はリソースが既に存在する場合のエラーです。usecase層で定義されているべきですが、便宜上ここで定義します。
-var ErrAlreadyExists = errors.New("already exists")
-
 type Repository struct {
 	db *sql.DB
 }
@@ -55,7 +49,7 @@ func (r *Repository) GetNodeByPath(path domain.Path) (domain.Node, error) {
 	var createdAt time.Time
 	if err := r.db.QueryRow(query, path.String()).Scan(&nodeID, &nodeType, &ownerToken, &displayName, &createdAt); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return domain.Node{}, ErrNotFound
+			return domain.Node{}, usecase.ErrNotFound
 		}
 		return domain.Node{}, fmt.Errorf("error querying node: %w", err)
 	}
@@ -162,20 +156,25 @@ func (r *Repository) CreateRoom(parentDirID int, parentDirPath, name, ownerToken
 	return nil
 }
 
-func (r *Repository) CreateExistRoom(roomID, dstDirID int, dstDirPath, name string) error {
+func (r *Repository) CreateExistRoom(roomID, dstDirID int, dstDirPath, name, ownerToken string) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback()
 	newPath := filepath.Join(dstDirPath, name)
-	query := "INSERT INTO rooms (name, directory_id, path, created_at) VALUES (?, ?, ?, ?)"
-	if _, err := tx.Exec(query, name, dstDirID, newPath, time.Now()); err != nil {
+	query := "INSERT INTO rooms (name, directory_id, path, owner_token, created_at) VALUES (?, ?, ?, ?, ?)"
+	result, err := tx.Exec(query, name, dstDirID, newPath, ownerToken, time.Now())
+	if err != nil {
 		return fmt.Errorf("failed to insert room '%s': %w", name, err)
 	}
-	query = "INSERT INTO messages (room_id, user_id, content, created_at) SELECT room_id, user_id, content, created_at FROM messages WHERE room_id = ?"
-	if _, err := tx.Exec(query); err != nil {
-		return fmt.Errorf("failed to insert room '%s': %w", name, err)
+	newRoomID, err := result.LastInsertId()
+	if err != nil {
+		return fmt.Errorf("failed to get last insert id: %w", err)
+	}
+	query = "INSERT INTO messages (room_id, content, display_name, created_at) SELECT ?, content, display_name, created_at FROM messages WHERE room_id = ?"
+	if _, err := tx.Exec(query, newRoomID, roomID); err != nil {
+		return fmt.Errorf("failed to insert messages '%s': %w", name, err)
 	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)

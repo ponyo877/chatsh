@@ -1,11 +1,10 @@
-# List
+# ✅ List
 grpcurl -plaintext localhost:50051 list
 
 # ✅ CreateRoom
 grpcurl -plaintext -import-path . -import-path grpc -proto grpc/chatsh.proto \
   -d '{"path": "/etc/test", "owner_token": "your_auth_token"}' \
   localhost:50051 fs.ChatshService/CreateRoom
-
 
 # ✅ CreateDirectory
 grpcurl -plaintext -import-path . -import-path grpc -proto grpc/chatsh.proto \
@@ -17,14 +16,18 @@ grpcurl -plaintext -import-path . -import-path grpc -proto grpc/chatsh.proto \
   -d '{"path": "/etc", "owner_token": "your_auth_token"}' \
   localhost:50051 fs.ChatshService/DeletePath
 
-# CopyPath
+# ✅ CopyPath
 grpcurl -plaintext -import-path . -import-path grpc -proto grpc/chatsh.proto \
-  -d '{"source_path": "/example/source_file", "destination_path": "/example/destination_copy", "owner_token": "your_auth_token"}' \
+  -d '{"source_path": "/etc/test", "destination_path": "/var/test_bk", "owner_token": "your_auth_token"}' \
   localhost:50051 fs.ChatshService/CopyPath
 
-# MovePath
 grpcurl -plaintext -import-path . -import-path grpc -proto grpc/chatsh.proto \
-  -d '{"source_path": "/example/source_to_move", "destination_path": "/example/new_location", "owner_token": "your_auth_token"}' \
+  -d '{"source_path": "/etc/test", "destination_path": "/var/", "owner_token": "your_auth_token"}' \
+  localhost:50051 fs.ChatshService/CopyPath
+
+# ✅ MovePath
+grpcurl -plaintext -import-path . -import-path grpc -proto grpc/chatsh.proto \
+  -d '{"source_path": "/var/test_bk2", "destination_path": "/etc/", "owner_token": "your_auth_token"}' \
   localhost:50051 fs.ChatshService/MovePath
 
 # ✅ ListNodes
