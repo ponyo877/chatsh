@@ -1,27 +1,69 @@
 /*
 Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"time"
 
+	pb "github.com/ponyo877/chatsh/grpc"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // grepCmd represents the grep command
 var grepCmd = &cobra.Command{
-	Use:   "grep",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Use:   "grep <pattern> <path>",
+	Short: "Searches for a pattern in a specified path (room).",
+	Long:  `Searches for a given pattern within the messages of a specified path (room) on the chatsh server.`,
+	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("grep called")
+		pattern := args[0]
+		pathArg := args[1]
+
+		currentBaseDir := viper.GetString(currentDirectoryKey)
+		if currentBaseDir == "" {
+			currentBaseDir = viper.GetString(homeDirectoryKey)
+		}
+
+		var targetPath string
+		if filepath.IsAbs(pathArg) {
+			targetPath = pathArg
+		} else {
+			targetPath = filepath.Join(currentBaseDir, pathArg)
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+		defer cancel()
+
+		req := &pb.SearchMessageRequest{
+			Pattern: pattern,
+			Path:    targetPath,
+			// SearchMessageRequest does not have OwnerToken in the proto definition.
+		}
+
+		res, err := chatshClient.SearchMessage(ctx, req)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error calling SearchMessage for pattern '%s' in %s: %v\n", pattern, targetPath, err)
+			return
+		}
+
+		if len(res.Messages) == 0 {
+			// Standard grep exits with 1 if no lines were selected, 0 otherwise.
+			// For simplicity, we'll just print nothing.
+			// To more closely match grep, we might os.Exit(1) here.
+			return
+		}
+
+		for _, msg := range res.Messages {
+			// Grep typically prints the matching line.
+			// Here, msg.TextContent is the entire message that matched.
+			fmt.Println(msg.TextContent)
+		}
 	},
 }
 

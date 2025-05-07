@@ -1,27 +1,60 @@
 /*
 Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"time"
 
+	pb "github.com/ponyo877/chatsh/grpc"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // rmCmd represents the rm command
 var rmCmd = &cobra.Command{
-	Use:   "rm",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Use:   "rm <path...>",
+	Short: "Removes files or directories.",
+	Long:  `Removes one or more files or directories on the chatsh server.`,
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("rm called")
+		currentBaseDir := viper.GetString(currentDirectoryKey)
+		if currentBaseDir == "" {
+			currentBaseDir = viper.GetString(homeDirectoryKey)
+		}
+
+		for _, itemPath := range args {
+			var targetPath string
+			if filepath.IsAbs(itemPath) {
+				targetPath = itemPath
+			} else {
+				targetPath = filepath.Join(currentBaseDir, itemPath)
+			}
+
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+			defer cancel()
+
+			req := &pb.DeletePathRequest{
+				Path:       targetPath,
+				OwnerToken: ownerToken, // ownerToken is loaded in root.go
+			}
+
+			res, err := chatshClient.DeletePath(ctx, req)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error calling DeletePath for %s: %v\n", targetPath, err)
+				continue
+			}
+
+			if res.Status.Ok {
+				fmt.Printf("Removed: %s\n", targetPath)
+			} else {
+				fmt.Fprintf(os.Stderr, "Failed to remove %s: %s\n", targetPath, res.Status.Message)
+			}
+		}
 	},
 }
 

@@ -1,32 +1,89 @@
 /*
 Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 
+	pb "github.com/ponyo877/chatsh/grpc"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
+
+var follow bool // Flag for -f option
 
 // tailCmd represents the tail command
 var tailCmd = &cobra.Command{
-	Use:   "tail",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Use:   "tail [-f] <path>",
+	Short: "Displays the last part of a file (room messages).",
+	Long: `Displays messages from the end of a specified path (room) on the chatsh server.
+With -f, appends data as the file grows.`,
+	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("tail called")
+		pathArg := args[0]
+
+		currentBaseDir := viper.GetString(currentDirectoryKey)
+		if currentBaseDir == "" {
+			currentBaseDir = viper.GetString(homeDirectoryKey)
+		}
+
+		var targetPath string
+		if filepath.IsAbs(pathArg) {
+			targetPath = pathArg
+		} else {
+			targetPath = filepath.Join(currentBaseDir, pathArg)
+		}
+
+		// For tail, the context might need to be long-lived if -f is used.
+		// However, individual gRPC stream calls might have their own timeouts or keep-alives.
+		// For now, we'll use a cancellable context.
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel() // Ensure cancellation on exit, e.g., Ctrl+C
+
+		req := &pb.StreamMessageRequest{
+			Path:       targetPath,
+			InitiToken: ownerToken, // Assuming InitiToken is the owner token for auth
+			Follow:     follow,
+		}
+
+		stream, err := chatshClient.StreamMessage(ctx, req)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error calling StreamMessage for %s: %v\n", targetPath, err)
+			return
+		}
+
+		for {
+			chunk, err := stream.Recv()
+			if err == io.EOF {
+				// Stream ended (e.g. if not following, or server closes it)
+				break
+			}
+			if err != nil {
+				// Check if context was cancelled (e.g. Ctrl+C)
+				if ctx.Err() == context.Canceled {
+					// fmt.Fprintln(os.Stderr, "Stream cancelled by client.")
+					break
+				}
+				fmt.Fprintf(os.Stderr, "Error receiving message stream for %s: %v\n", targetPath, err)
+				break
+			}
+
+			fmt.Print(chunk.Line) // Assuming Line includes newline if it's a full line
+			if chunk.Eof && !follow {
+				break
+			}
+		}
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(tailCmd)
+	tailCmd.Flags().BoolVarP(&follow, "follow", "f", false, "Follow the content of the file")
 
 	// Here you will define your flags and configuration settings.
 

@@ -1,6 +1,5 @@
 /*
 Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
@@ -8,20 +7,32 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
+
+const currentDirectoryKey = "current_directory"
 
 // pwdCmd represents the pwd command
 var pwdCmd = &cobra.Command{
 	Use:   "pwd",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Prints the current working directory.",
+	Long: `Prints the current working directory managed by this CLI.
+This may be different from the OS's current working directory.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("pwd called")
+		currentDir := viper.GetString(currentDirectoryKey)
+		if currentDir == "" {
+			currentDir = viper.GetString(homeDirectoryKey)
+			// Optionally, save the home directory as the default if it's the first run
+			// viper.Set(currentDirectoryKey, currentDir)
+			// if err := viper.SafeWriteConfig(); err != nil {
+			//  if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			//    // Config file not found; ignore error if we want to auto-create it later with cd
+			//  } else {
+			//    fmt.Fprintln(os.Stderr, "Error saving current directory:", err)
+			//  }
+			// }
+		}
+		fmt.Println(currentDir)
 	},
 }
 

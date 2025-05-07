@@ -1,27 +1,66 @@
 /*
 Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"time"
 
+	pb "github.com/ponyo877/chatsh/grpc"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // echoCmd represents the echo command
 var echoCmd = &cobra.Command{
-	Use:   "echo",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Use:   "echo <text_to_write> <destination_path>",
+	Short: "Writes text to a destination path (room).",
+	Long:  `Writes the given text content to the specified destination path (room) on the chatsh server.`,
+	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("echo called")
+		textContent := args[0]
+		destinationPathArg := args[1]
+
+		currentBaseDir := viper.GetString(currentDirectoryKey)
+		if currentBaseDir == "" {
+			currentBaseDir = viper.GetString(homeDirectoryKey)
+		}
+
+		var targetPath string
+		if filepath.IsAbs(destinationPathArg) {
+			targetPath = destinationPathArg
+		} else {
+			targetPath = filepath.Join(currentBaseDir, destinationPathArg)
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+		defer cancel()
+
+		req := &pb.WriteMessageRequest{
+			TextContent:     textContent,
+			DestinationPath: targetPath,
+			OwnerToken:      ownerToken, // ownerToken is loaded in root.go
+		}
+
+		res, err := chatshClient.WriteMessage(ctx, req)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error calling WriteMessage to %s: %v\n", targetPath, err)
+			return
+		}
+
+		if res.Status.Ok {
+			// Standard echo doesn't print anything other than the echoed string.
+			// Here, we are writing to a server, so a confirmation might be useful.
+			// However, to mimic `echo > file` behavior, we might not print anything on success.
+			// For now, let's print a confirmation.
+			fmt.Printf("Text written to %s\n", targetPath)
+		} else {
+			fmt.Fprintf(os.Stderr, "Failed to write text to %s: %s\n", targetPath, res.Status.Message)
+		}
 	},
 }
 

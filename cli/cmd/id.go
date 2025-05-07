@@ -1,27 +1,45 @@
 /*
 Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"time"
 
+	pb "github.com/ponyo877/chatsh/grpc"
 	"github.com/spf13/cobra"
+	// viper is already used in root.go for ownerToken
 )
 
 // idCmd represents the id command
 var idCmd = &cobra.Command{
 	Use:   "id",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Prints user configuration information.",
+	Long:  `Prints user-specific configuration information, such as the display name, retrieved from the server.`,
+	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("id called")
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+		defer cancel()
+
+		req := &pb.GetConfigRequest{
+			OwnerToken: ownerToken, // ownerToken is loaded in root.go
+		}
+
+		res, err := chatshClient.GetConfig(ctx, req)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error getting user config (id): %v\n", err)
+			return
+		}
+
+		// Standard `id` command prints uid, gid, groups.
+		// Here we print the display name as a form of user identification within this app.
+		fmt.Printf("DisplayName: %s\n", res.DisplayName)
+		// If OwnerToken itself is considered an ID, it could be printed too,
+		// but that might be a security concern depending on its nature.
+		// fmt.Printf("OwnerToken: %s\n", ownerToken) // Example, if appropriate
 	},
 }
 
