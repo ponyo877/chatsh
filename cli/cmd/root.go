@@ -4,12 +4,15 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"bufio"
 	"fmt"
 	"os"
+	"strings"
 
 	// Adjust this import path if your module name is different.
 	pb "github.com/ponyo877/chatsh/grpc" // Import the generated gRPC package
 
+	"github.com/mattn/go-shellwords"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
@@ -65,9 +68,33 @@ to quickly create a Cobra application.`,
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
-		os.Exit(1)
+	// one‑shot
+	if len(os.Args) > 1 {
+		if err := rootCmd.Execute(); err != nil {
+			os.Exit(1)
+			return
+		}
+	}
+
+	// REPL
+	fmt.Println("entering interactive mode, type 'exit' to quit")
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		fmt.Print("❯❯❯ ")
+		line, _ := reader.ReadString('\n')
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		if line == "exit" || line == "quit" {
+			break
+		}
+		args, _ := shellwords.Parse(line)
+		rootCmd.SetArgs(args)
+		if err := rootCmd.Execute(); err != nil {
+			os.Exit(1)
+			return
+		}
 	}
 }
 
