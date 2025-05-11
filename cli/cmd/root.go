@@ -67,7 +67,14 @@ to quickly create a Cobra application.`,
 }
 
 func PathCompletionFunc(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return completionFuncHelper(cmd, args, toComplete, true)
+}
 
+func DirectoryPathCompletionFunc(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return completionFuncHelper(cmd, args, toComplete, false)
+}
+
+func completionFuncHelper(cmd *cobra.Command, args []string, toComplete string, includeRoom bool) ([]string, cobra.ShellCompDirective) {
 	debugFile, _ := os.OpenFile("/tmp/chatsh_completion_debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if debugFile != nil {
 		defer debugFile.Close()
@@ -136,6 +143,9 @@ func PathCompletionFunc(cmd *cobra.Command, args []string, toComplete string) ([
 				if !strings.HasSuffix(suggestion, "/") {
 					suggestion += "/"
 				}
+			}
+			if entry.Type == pb.NodeType_ROOM && !includeRoom {
+				continue
 			}
 			suggestions = append(suggestions, suggestion)
 		}

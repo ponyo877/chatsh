@@ -135,14 +135,14 @@ func (r *Repository) ListNodes(parentDirID int) ([]domain.Node, error) {
 		if err := rows.Scan(&id, &name, &nodeType, &ownerToken, &displayName, &createdAt); err != nil {
 			return nil, fmt.Errorf("failed to scan subdirectory info: %w", err)
 		}
-		results = append(results, domain.Node{
-			ID:         id,
-			Name:       name,
-			Type:       domain.NodeTypeDirectory,
-			OwnerToken: ownerToken,
-			OwnerName:  displayName,
-			CreatedAt:  createdAt,
-		})
+		results = append(results, domain.NewNode(
+			id,
+			name,
+			domain.NodeType(nodeType),
+			ownerToken,
+			displayName,
+			createdAt,
+		))
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("error iterating over subdirectories for %d: %w", parentDirID, err)
