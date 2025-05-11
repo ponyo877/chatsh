@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	pb "github.com/ponyo877/chatsh/grpc"
@@ -25,19 +26,23 @@ of the current directory managed by this CLI.`,
 	// Add ValidArgsFunction for path completion
 	ValidArgsFunction: PathCompletionFunc,
 	Run: func(cmd *cobra.Command, args []string) {
+		current := viper.GetString(currentDirectoryKey)
 		var targetPath string
 		if len(args) == 0 {
-			targetPath = viper.GetString(currentDirectoryKey)
-			if targetPath == "" {
-				targetPath = viper.GetString(homeDirectoryKey)
-			}
+			targetPath = current
 		} else {
-			targetPath = args[0]
-			// Note: For gRPC calls, we might not need to resolve to absolute path on client side
-			// if the server handles relative paths based on its own context or a user session.
-			// However, if the server expects absolute paths, or paths relative to a user-specific root,
-			// this might need adjustment similar to the 'cd' command.
-			// For now, we'll pass the path as is, assuming the server handles it.
+			// 	targetPath = args[0]
+			// 	// Note: For gRPC calls, we might not need to resolve to absolute path on client side
+			// 	// if the server handles relative paths based on its own context or a user session.
+			// 	// However, if the server expects absolute paths, or paths relative to a user-specific root,
+			// 	// this might need adjustment similar to the 'cd' command.
+			// 	// For now, we'll pass the path as is, assuming the server handles it.
+			sourceArg := args[0]
+			if filepath.IsAbs(sourceArg) {
+				targetPath = sourceArg
+			} else {
+				targetPath = filepath.Join(current, sourceArg)
+			}
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)

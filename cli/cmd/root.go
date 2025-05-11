@@ -4,18 +4,16 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
-
-	pb "github.com/ponyo877/chatsh/grpc"
-
-	"context"
 	"time"
 
+	"github.com/c-bata/go-prompt"
 	"github.com/mattn/go-shellwords"
+	pb "github.com/ponyo877/chatsh/grpc"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
@@ -91,29 +89,14 @@ func completionFuncHelper(cmd *cobra.Command, args []string, toComplete string, 
 		return nil, cobra.ShellCompDirectiveError
 	}
 
-	var dirToList, prefix string
-	firstSlash := strings.Index(toComplete, "/")
-	lastSlash := strings.LastIndex(toComplete, "/")
-	current := viper.GetString(currentDirectoryKey)
-	// absolute path
-	if firstSlash == 0 {
-		dirToList = "/"
-		if lastSlash > 0 {
-			dirToList = toComplete[:lastSlash]
-		}
-
-		prefix = toComplete[lastSlash+1:]
-	} else { // relative path
-		dirToList = current
-		prefix = toComplete
-		if lastSlash != -1 {
-			dirToList = filepath.Join(dirToList, toComplete[:lastSlash])
-			prefix = toComplete[lastSlash+1:]
-		}
+	dir, base := filepath.Split(toComplete)
+	dirToList := filepath.Join(viper.GetString(currentDirectoryKey), dir)
+	if filepath.IsAbs(toComplete) {
+		dirToList = dir
 	}
 
 	if debugFile != nil {
-		fmt.Fprintf(debugFile, "Calculated dirToList: '%s', prefix: '%s'\n", dirToList, prefix)
+		fmt.Fprintf(debugFile, "Calculated dirToList: '%s', prefix: '%s'\n", dirToList, base)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -137,12 +120,10 @@ func completionFuncHelper(cmd *cobra.Command, args []string, toComplete string, 
 
 	var suggestions []string
 	for _, entry := range res.Entries {
-		if strings.HasPrefix(entry.Name, prefix) {
-			suggestion := filepath.Join(toComplete[:lastSlash+1], entry.Name)
+		if strings.HasPrefix(entry.Name, base) {
+			suggestion := filepath.Join(dir, entry.Name)
 			if entry.Type == pb.NodeType_DIRECTORY {
-				if !strings.HasSuffix(suggestion, "/") {
-					suggestion += "/"
-				}
+				suggestion += "/"
 			}
 			if entry.Type == pb.NodeType_ROOM && !includeRoom {
 				continue
@@ -157,48 +138,113 @@ func completionFuncHelper(cmd *cobra.Command, args []string, toComplete string, 
 	}
 	return suggestions, cobra.ShellCompDirectiveNoFileComp | cobra.ShellCompDirectiveNoSpace
 }
+
+func completer(d prompt.Document) []prompt.Suggest {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	text := d.TextBeforeCursor()
+	fields := strings.Fields(text)
+	if len(fields) < 2 && !strings.HasSuffix(text, " ") {
+		return nil
+	}
+	toComplete := fields[len(fields)-1]
+	if strings.HasSuffix(text, " ") {
+		toComplete = ""
+	}
+	dir, base := filepath.Split(toComplete)
+	dirToList := filepath.Join(viper.GetString(currentDirectoryKey), dir)
+	if filepath.IsAbs(toComplete) {
+		dirToList = dir
+	}
+
+	req := &pb.ListNodesRequest{
+		Path: dirToList,
+	}
+	res, err := chatshClient.ListNodes(ctx, req)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error listing nodes:", err)
+		return []prompt.Suggest{}
+	}
+
+	s := []prompt.Suggest{}
+	for _, entry := range res.Entries {
+		if strings.HasPrefix(entry.Name, base) {
+			suggestion := entry.Name
+			if entry.Type == pb.NodeType_DIRECTORY {
+				suggestion += "/"
+			}
+			s = append(s, prompt.Suggest{
+				Text:        filepath.Join(dir, suggestion),
+				Description: "",
+			})
+		}
+	}
+	return s
+}
+
+func executor(line string) {
+	line = strings.TrimSpace(line)
+	if line == "" {
+		return
+	}
+	if line == "exit" || line == "quit" {
+		fmt.Println("exiting interactive mode")
+		os.Exit(0)
+	}
+
+	args, err := shellwords.Parse(line)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error parsing command:", err)
+		return
+	}
+	if len(args) == 0 {
+		return
+	}
+	originalPostRunE := rootCmd.PersistentPostRunE
+	rootCmd.PersistentPostRunE = nil
+	rootCmd.SetArgs(args)
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, "Error executing command:", err)
+		return
+	}
+	rootCmd.PersistentPostRunE = originalPostRunE
+}
+
 func Execute() {
 	if len(os.Args) > 1 {
 		if err := rootCmd.Execute(); err != nil {
 			os.Exit(1)
 		}
-
-		if len(os.Args) > 1 && os.Args[1] == "completion" {
+		if os.Args[1] == "completion" {
 			return
 		}
 		return
 	}
-
-	fmt.Println("entering interactive mode, type 'exit' to quit")
-	reader := bufio.NewReader(os.Stdin)
-	for {
-		fmt.Print("❯❯❯ ")
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "Error reading input:", err)
-			break
-		}
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-		if line == "exit" || line == "quit" {
-			break
-		}
-
-		args, err := shellwords.Parse(line)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "Error parsing command:", err)
-			continue
-		}
-		if len(args) == 0 {
-			continue
-		}
-
-		rootCmd.SetArgs(args)
-		if err := rootCmd.Execute(); err != nil {
+	initConfig()
+	if rootCmd.PersistentPreRunE != nil {
+		if err := rootCmd.PersistentPreRunE(rootCmd, []string{}); err != nil {
+			fmt.Fprintln(os.Stderr, "Failed to initialize gRPC client for interactive mode:", err)
+			os.Exit(1)
 		}
 	}
+
+	defer func() {
+		if rootCmd.PersistentPostRunE != nil {
+			if err := rootCmd.PersistentPostRunE(rootCmd, []string{}); err != nil {
+				fmt.Fprintln(os.Stderr, "Failed to close gRPC client after interactive mode:", err)
+			}
+		}
+	}()
+
+	fmt.Println("entering interactive mode, type 'exit' to quit")
+	p := prompt.New(
+		executor,
+		completer,
+		prompt.OptionPrefix("❯❯❯ "),
+		prompt.OptionTitle("chatsh interactive mode"),
+	)
+	p.Run()
 }
 
 func init() {
