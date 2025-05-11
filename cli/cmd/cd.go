@@ -23,6 +23,8 @@ var cdCmd = &cobra.Command{
 If no directory is specified, it changes to the user's home directory.
 This command updates the directory path stored in the configuration file.`,
 	Args: cobra.MaximumNArgs(1), // Allow 0 or 1 argument
+	// Add ValidArgsFunction for path completion
+	ValidArgsFunction: PathCompletionFunc,
 	Run: func(cmd *cobra.Command, args []string) {
 		var targetDir string
 		currentDir := viper.GetString(currentDirectoryKey)

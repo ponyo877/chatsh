@@ -24,6 +24,8 @@ var tailCmd = &cobra.Command{
 	Long: `Displays messages from the end of a specified path (room) on the chatsh server.
 With -f, appends data as the file grows.`,
 	Args: cobra.ExactArgs(1),
+	// Add ValidArgsFunction for path completion
+	ValidArgsFunction: PathCompletionFunc,
 	Run: func(cmd *cobra.Command, args []string) {
 		pathArg := args[0]
 

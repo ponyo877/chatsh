@@ -10,8 +10,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-const currentDirectoryKey = "current_directory"
-
 // pwdCmd represents the pwd command
 var pwdCmd = &cobra.Command{
 	Use:   "pwd",

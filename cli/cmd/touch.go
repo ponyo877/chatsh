@@ -23,6 +23,8 @@ var touchCmd = &cobra.Command{
 If the file already exists, the current API (CreateRoom) might return an error or do nothing.
 Standard touch behavior of updating timestamps for existing files is not directly supported by CreateRoom.`,
 	Args: cobra.MinimumNArgs(1),
+	// Add ValidArgsFunction for path completion
+	ValidArgsFunction: PathCompletionFunc,
 	Run: func(cmd *cobra.Command, args []string) {
 		currentBaseDir := viper.GetString(currentDirectoryKey)
 		if currentBaseDir == "" {

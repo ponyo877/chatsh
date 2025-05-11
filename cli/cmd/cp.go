@@ -21,6 +21,8 @@ var cpCmd = &cobra.Command{
 	Short: "Copies a file or directory.",
 	Long:  `Copies a source file or directory to a destination on the chatsh server.`,
 	Args:  cobra.ExactArgs(2),
+	// Add ValidArgsFunction for path completion
+	ValidArgsFunction: PathCompletionFunc,
 	Run: func(cmd *cobra.Command, args []string) {
 		sourceArg := args[0]
 		destinationArg := args[1]

@@ -22,6 +22,8 @@ var lsCmd = &cobra.Command{
 on the chatsh server. If no path is provided, it lists the contents
 of the current directory managed by this CLI.`,
 	Args: cobra.MaximumNArgs(1),
+	// Add ValidArgsFunction for path completion
+	ValidArgsFunction: PathCompletionFunc,
 	Run: func(cmd *cobra.Command, args []string) {
 		var targetPath string
 		if len(args) == 0 {

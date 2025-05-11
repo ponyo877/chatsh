@@ -21,6 +21,8 @@ var echoCmd = &cobra.Command{
 	Short: "Writes text to a destination path (room).",
 	Long:  `Writes the given text content to the specified destination path (room) on the chatsh server.`,
 	Args:  cobra.ExactArgs(2),
+	// Add ValidArgsFunction for path completion on the destination_path argument
+	ValidArgsFunction: PathCompletionFunc,
 	Run: func(cmd *cobra.Command, args []string) {
 		textContent := args[0]
 		destinationPathArg := args[1]

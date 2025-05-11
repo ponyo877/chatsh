@@ -21,6 +21,8 @@ var mkdirCmd = &cobra.Command{
 	Short: "Creates new directories.",
 	Long:  `Creates one or more new directories on the chatsh server.`,
 	Args:  cobra.MinimumNArgs(1),
+	// Add ValidArgsFunction for path completion
+	ValidArgsFunction: PathCompletionFunc,
 	Run: func(cmd *cobra.Command, args []string) {
 		currentBaseDir := viper.GetString(currentDirectoryKey)
 		if currentBaseDir == "" {

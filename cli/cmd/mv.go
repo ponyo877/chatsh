@@ -19,8 +19,10 @@ import (
 var mvCmd = &cobra.Command{
 	Use:   "mv <source> <destination>",
 	Short: "Moves or renames a file or directory.",
-	Long:  `Moves (renames) a source file or directory to a destination on the chatsh server.`,
+	Long:  `Moves or renames a source file or directory to a destination on the chatsh server.`,
 	Args:  cobra.ExactArgs(2),
+	// Add ValidArgsFunction for path completion
+	ValidArgsFunction: PathCompletionFunc,
 	Run: func(cmd *cobra.Command, args []string) {
 		sourceArg := args[0]
 		destinationArg := args[1]

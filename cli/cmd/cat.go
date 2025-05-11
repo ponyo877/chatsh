@@ -22,6 +22,8 @@ var catCmd = &cobra.Command{
 	Short: "Displays the content of files (rooms).",
 	Long:  `Displays the content of one or more files (interpreted as rooms) on the chatsh server.`,
 	Args:  cobra.MinimumNArgs(1),
+	// Add ValidArgsFunction for path completion
+	ValidArgsFunction: PathCompletionFunc,
 	Run: func(cmd *cobra.Command, args []string) {
 		currentBaseDir := viper.GetString(currentDirectoryKey)
 		if currentBaseDir == "" {

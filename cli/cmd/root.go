@@ -7,10 +7,13 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
-	// Adjust this import path if your module name is different.
-	pb "github.com/ponyo877/chatsh/grpc" // Import the generated gRPC package
+	pb "github.com/ponyo877/chatsh/grpc"
+
+	"context"
+	"time"
 
 	"github.com/mattn/go-shellwords"
 	"github.com/spf13/cobra"
@@ -28,12 +31,12 @@ var (
 )
 
 const (
+	currentDirectoryKey  = "current_directory"
 	homeDirectoryKey     = "home_directory"
 	ownerTokenKey        = "owner_token"
 	grpcServerAddressKey = "grpc_server_address"
 )
 
-// rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "cli",
 	Short: "A brief description of your application",
@@ -44,8 +47,6 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		// Initialize gRPC client
-		// Ensure grpcServerAddress and ownerToken are loaded by initConfig before this runs
 		conn, err := grpc.NewClient(grpcServerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			return fmt.Errorf("did not connect to gRPC server: %w", err)
@@ -60,28 +61,113 @@ to quickly create a Cobra application.`,
 		}
 		return nil
 	},
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+	Run: func(cmd *cobra.Command, args []string) {
+
+	},
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
-	// one‑shot
-	if len(os.Args) > 1 {
-		if err := rootCmd.Execute(); err != nil {
-			os.Exit(1)
-			return
+func PathCompletionFunc(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+
+	debugFile, _ := os.OpenFile("/tmp/chatsh_completion_debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if debugFile != nil {
+		defer debugFile.Close()
+		fmt.Fprintf(debugFile, "--- New Completion Request ---\n")
+		fmt.Fprintf(debugFile, "Time: %s\n", time.Now().Format(time.RFC3339Nano))
+		fmt.Fprintf(debugFile, "Command: %s\n", cmd.Use)
+		fmt.Fprintf(debugFile, "Args: %v\n", args)
+		fmt.Fprintf(debugFile, "ToComplete: '%s'\n", toComplete)
+	}
+	if chatshClient == nil {
+		if debugFile != nil {
+			fmt.Fprintf(debugFile, "Error: chatshClient is nil\n")
+		}
+		return nil, cobra.ShellCompDirectiveError
+	}
+
+	var dirToList, prefix string
+	firstSlash := strings.Index(toComplete, "/")
+	lastSlash := strings.LastIndex(toComplete, "/")
+	current := viper.GetString(currentDirectoryKey)
+	// absolute path
+	if firstSlash == 0 {
+		dirToList = "/"
+		if lastSlash > 0 {
+			dirToList = toComplete[:lastSlash]
+		}
+
+		prefix = toComplete[lastSlash+1:]
+	} else { // relative path
+		dirToList = current
+		prefix = toComplete
+		if lastSlash != -1 {
+			dirToList = filepath.Join(dirToList, toComplete[:lastSlash])
+			prefix = toComplete[lastSlash+1:]
 		}
 	}
 
-	// REPL
+	if debugFile != nil {
+		fmt.Fprintf(debugFile, "Calculated dirToList: '%s', prefix: '%s'\n", dirToList, prefix)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	req := &pb.ListNodesRequest{
+		Path: dirToList,
+	}
+
+	if debugFile != nil {
+		fmt.Fprintf(debugFile, "ListNodes Request: Path='%s'\n", req.Path)
+	}
+
+	res, err := chatshClient.ListNodes(ctx, req)
+	if err != nil {
+		if debugFile != nil {
+			fmt.Fprintf(debugFile, "ListNodes Error: %v\n", err)
+		}
+		return nil, cobra.ShellCompDirectiveError
+	}
+
+	var suggestions []string
+	for _, entry := range res.Entries {
+		if strings.HasPrefix(entry.Name, prefix) {
+			suggestion := filepath.Join(toComplete[:lastSlash+1], entry.Name)
+			if entry.Type == pb.NodeType_DIRECTORY {
+				if !strings.HasSuffix(suggestion, "/") {
+					suggestion += "/"
+				}
+			}
+			suggestions = append(suggestions, suggestion)
+		}
+	}
+
+	if debugFile != nil {
+		fmt.Fprintf(debugFile, "Suggestions: %v\n", suggestions)
+		fmt.Fprintf(debugFile, "--- End Completion Request ---\n\n")
+	}
+	return suggestions, cobra.ShellCompDirectiveNoFileComp | cobra.ShellCompDirectiveNoSpace
+}
+func Execute() {
+	if len(os.Args) > 1 {
+		if err := rootCmd.Execute(); err != nil {
+			os.Exit(1)
+		}
+
+		if len(os.Args) > 1 && os.Args[1] == "completion" {
+			return
+		}
+		return
+	}
+
 	fmt.Println("entering interactive mode, type 'exit' to quit")
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		fmt.Print("❯❯❯ ")
-		line, _ := reader.ReadString('\n')
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Error reading input:", err)
+			break
+		}
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
@@ -89,11 +175,18 @@ func Execute() {
 		if line == "exit" || line == "quit" {
 			break
 		}
-		args, _ := shellwords.Parse(line)
+
+		args, err := shellwords.Parse(line)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Error parsing command:", err)
+			continue
+		}
+		if len(args) == 0 {
+			continue
+		}
+
 		rootCmd.SetArgs(args)
 		if err := rootCmd.Execute(); err != nil {
-			os.Exit(1)
-			return
 		}
 	}
 }
@@ -110,48 +203,33 @@ func init() {
 	viper.BindPFlag(ownerTokenKey, rootCmd.PersistentFlags().Lookup("owner-token"))
 	viper.BindPFlag(grpcServerAddressKey, rootCmd.PersistentFlags().Lookup("grpc-server"))
 	viper.SetDefault(homeDirectoryKey, "/home/chatsh")
-	viper.SetDefault(ownerTokenKey, "default_token") // Consider if a default token is appropriate or if it should always be set
+	viper.SetDefault(currentDirectoryKey, "/home/chatsh")
+	viper.SetDefault(ownerTokenKey, "default_token")
 	viper.SetDefault(grpcServerAddressKey, "localhost:50051")
 
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
-
-// initConfig reads in config file and ENV variables if set.
 func initConfig() {
 	if cfgFile != "" {
-		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
-		// Find home directory.
 		home, err := os.UserHomeDir()
 		cobra.CheckErr(err)
 
-		// Search config in home directory with name ".cli" (without extension).
 		viper.AddConfigPath(home)
 		viper.SetConfigType("yaml")
-		viper.SetConfigName(".cli") // This will look for .cli.yaml
+		viper.SetConfigName(".cli")
 	}
 
-	viper.AutomaticEnv() // read in environment variables that match
+	viper.AutomaticEnv()
 
-	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			// Config file not found; ignore error if it's optional
 			fmt.Fprintln(os.Stderr, "Config file not found, using default values and environment variables.")
 		} else {
-			// Config file was found but another error was produced
 			fmt.Fprintln(os.Stderr, "Error reading config file:", err)
 		}
 	}
 
-	// Load values after all potential sources (defaults, flags, env, config file)
 	ownerToken = viper.GetString(ownerTokenKey)
 	grpcServerAddress = viper.GetString(grpcServerAddressKey)
-
-	// For debugging, you can print the loaded values:
-	// fmt.Fprintln(os.Stderr, "Loaded owner token:", ownerToken)
-	// fmt.Fprintln(os.Stderr, "Loaded gRPC server address:", grpcServerAddress)
 }

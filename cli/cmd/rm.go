@@ -21,6 +21,8 @@ var rmCmd = &cobra.Command{
 	Short: "Removes files or directories.",
 	Long:  `Removes one or more files or directories on the chatsh server.`,
 	Args:  cobra.MinimumNArgs(1),
+	// Add ValidArgsFunction for path completion
+	ValidArgsFunction: PathCompletionFunc,
 	Run: func(cmd *cobra.Command, args []string) {
 		currentBaseDir := viper.GetString(currentDirectoryKey)
 		if currentBaseDir == "" {

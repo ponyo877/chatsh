@@ -21,6 +21,8 @@ var grepCmd = &cobra.Command{
 	Short: "Searches for a pattern in a specified path (room).",
 	Long:  `Searches for a given pattern within the messages of a specified path (room) on the chatsh server.`,
 	Args:  cobra.ExactArgs(2),
+	// Add ValidArgsFunction for path completion on the path argument
+	ValidArgsFunction: PathCompletionFunc,
 	Run: func(cmd *cobra.Command, args []string) {
 		pattern := args[0]
 		pathArg := args[1]
