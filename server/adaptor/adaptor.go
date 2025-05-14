@@ -6,7 +6,6 @@ import (
 
 	pb "github.com/ponyo877/chatsh/grpc"
 	"github.com/ponyo877/chatsh/server/domain"
-	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -170,7 +169,10 @@ func (a *Adaptor) WriteMessage(ctx context.Context, in *pb.WriteMessageRequest) 
 	return &pb.WriteMessageResponse{Status: &pb.Status{Ok: true}}, nil
 }
 
-func (a *Adaptor) StreamMessage(in *pb.StreamMessageRequest, client grpc.ServerStreamingServer[pb.MessageChunk]) error {
-	// TODO: not implemented
+func (a *Adaptor) StreamMessage(stream pb.ChatshService_StreamMessageServer) error {
+	if err := a.uc.StreamMessage(stream); err != nil {
+		log.Printf("Adaptor.StreamMessage: error from usecase: %v", err)
+		return err
+	}
 	return nil
 }

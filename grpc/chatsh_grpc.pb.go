@@ -48,7 +48,7 @@ type ChatshServiceClient interface {
 	MovePath(ctx context.Context, in *MovePathRequest, opts ...grpc.CallOption) (*MovePathResponse, error)
 	ListNodes(ctx context.Context, in *ListNodesRequest, opts ...grpc.CallOption) (*ListNodesResponse, error)
 	ListMessages(ctx context.Context, in *ListMessagesRequest, opts ...grpc.CallOption) (*ListMessagesResponse, error)
-	StreamMessage(ctx context.Context, in *StreamMessageRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[MessageChunk], error)
+	StreamMessage(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ClientMessage, ServerMessage], error)
 	SearchMessage(ctx context.Context, in *SearchMessageRequest, opts ...grpc.CallOption) (*SearchMessageResponse, error)
 	WriteMessage(ctx context.Context, in *WriteMessageRequest, opts ...grpc.CallOption) (*WriteMessageResponse, error)
 }
@@ -161,24 +161,18 @@ func (c *chatshServiceClient) ListMessages(ctx context.Context, in *ListMessages
 	return out, nil
 }
 
-func (c *chatshServiceClient) StreamMessage(ctx context.Context, in *StreamMessageRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[MessageChunk], error) {
+func (c *chatshServiceClient) StreamMessage(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ClientMessage, ServerMessage], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &ChatshService_ServiceDesc.Streams[0], ChatshService_StreamMessage_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[StreamMessageRequest, MessageChunk]{ClientStream: stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
+	x := &grpc.GenericClientStream[ClientMessage, ServerMessage]{ClientStream: stream}
 	return x, nil
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type ChatshService_StreamMessageClient = grpc.ServerStreamingClient[MessageChunk]
+type ChatshService_StreamMessageClient = grpc.BidiStreamingClient[ClientMessage, ServerMessage]
 
 func (c *chatshServiceClient) SearchMessage(ctx context.Context, in *SearchMessageRequest, opts ...grpc.CallOption) (*SearchMessageResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -214,7 +208,7 @@ type ChatshServiceServer interface {
 	MovePath(context.Context, *MovePathRequest) (*MovePathResponse, error)
 	ListNodes(context.Context, *ListNodesRequest) (*ListNodesResponse, error)
 	ListMessages(context.Context, *ListMessagesRequest) (*ListMessagesResponse, error)
-	StreamMessage(*StreamMessageRequest, grpc.ServerStreamingServer[MessageChunk]) error
+	StreamMessage(grpc.BidiStreamingServer[ClientMessage, ServerMessage]) error
 	SearchMessage(context.Context, *SearchMessageRequest) (*SearchMessageResponse, error)
 	WriteMessage(context.Context, *WriteMessageRequest) (*WriteMessageResponse, error)
 	mustEmbedUnimplementedChatshServiceServer()
@@ -257,7 +251,7 @@ func (UnimplementedChatshServiceServer) ListNodes(context.Context, *ListNodesReq
 func (UnimplementedChatshServiceServer) ListMessages(context.Context, *ListMessagesRequest) (*ListMessagesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListMessages not implemented")
 }
-func (UnimplementedChatshServiceServer) StreamMessage(*StreamMessageRequest, grpc.ServerStreamingServer[MessageChunk]) error {
+func (UnimplementedChatshServiceServer) StreamMessage(grpc.BidiStreamingServer[ClientMessage, ServerMessage]) error {
 	return status.Errorf(codes.Unimplemented, "method StreamMessage not implemented")
 }
 func (UnimplementedChatshServiceServer) SearchMessage(context.Context, *SearchMessageRequest) (*SearchMessageResponse, error) {
@@ -468,15 +462,11 @@ func _ChatshService_ListMessages_Handler(srv interface{}, ctx context.Context, d
 }
 
 func _ChatshService_StreamMessage_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(StreamMessageRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(ChatshServiceServer).StreamMessage(m, &grpc.GenericServerStream[StreamMessageRequest, MessageChunk]{ServerStream: stream})
+	return srv.(ChatshServiceServer).StreamMessage(&grpc.GenericServerStream[ClientMessage, ServerMessage]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type ChatshService_StreamMessageServer = grpc.ServerStreamingServer[MessageChunk]
+type ChatshService_StreamMessageServer = grpc.BidiStreamingServer[ClientMessage, ServerMessage]
 
 func _ChatshService_SearchMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SearchMessageRequest)
@@ -575,6 +565,7 @@ var ChatshService_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "StreamMessage",
 			Handler:       _ChatshService_StreamMessage_Handler,
 			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
 	Metadata: "grpc/chatsh.proto",

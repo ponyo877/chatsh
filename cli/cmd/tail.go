@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 
-	pb "github.com/ponyo877/chatsh/grpc"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -47,13 +46,7 @@ With -f, appends data as the file grows.`,
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel() // Ensure cancellation on exit, e.g., Ctrl+C
 
-		req := &pb.StreamMessageRequest{
-			Path:       targetPath,
-			InitiToken: ownerToken, // Assuming InitiToken is the owner token for auth
-			Follow:     follow,
-		}
-
-		stream, err := chatshClient.StreamMessage(ctx, req)
+		stream, err := chatshClient.StreamMessage(ctx)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error calling StreamMessage for %s: %v\n", targetPath, err)
 			return
@@ -75,10 +68,7 @@ With -f, appends data as the file grows.`,
 				break
 			}
 
-			fmt.Print(chunk.Line) // Assuming Line includes newline if it's a full line
-			if chunk.Eof && !follow {
-				break
-			}
+			fmt.Print(chunk.GetText()) // Assuming Line includes newline if it's a full line
 		}
 	},
 }
