@@ -21,17 +21,17 @@ type Usecase struct {
 }
 
 func NewUsecase(repo Repository) adaptor.Usecase {
-	return Usecase{
+	return &Usecase{
 		repo:  repo,
 		rooms: sync.Map{},
 	}
 }
 
-func (u Usecase) CheckDirectoryExists(path domain.Path) (bool, error) {
+func (u *Usecase) CheckDirectoryExists(path domain.Path) (bool, error) {
 	return u.repo.CheckDirectoryExists(path)
 }
 
-func (u Usecase) GetConfig(ownerToken string) (domain.Config, error) {
+func (u *Usecase) GetConfig(ownerToken string) (domain.Config, error) {
 	config, err := u.repo.GetConfig(ownerToken)
 	if err != nil {
 		return domain.Config{}, fmt.Errorf("error getting config: %w", err)
@@ -39,14 +39,14 @@ func (u Usecase) GetConfig(ownerToken string) (domain.Config, error) {
 	return config, nil
 }
 
-func (u Usecase) SetConfig(config domain.Config) error {
+func (u *Usecase) SetConfig(config domain.Config) error {
 	if err := u.repo.CreateConfig(config); err != nil {
 		return fmt.Errorf("error setting config: %w", err)
 	}
 	return nil
 }
 
-func (u Usecase) CreateRoom(path domain.Path, ownerToken string) error {
+func (u *Usecase) CreateRoom(path domain.Path, ownerToken string) error {
 	parentNode, err := u.repo.GetNodeByPath(path.Parent())
 	if err != nil {
 		return fmt.Errorf("error getting parent room: %w", err)
@@ -54,7 +54,7 @@ func (u Usecase) CreateRoom(path domain.Path, ownerToken string) error {
 	return u.repo.CreateRoom(parentNode.ID, path.Parent().String(), path.NodeName(), ownerToken)
 }
 
-func (u Usecase) CreateDirectory(path domain.Path, ownerToken string) error {
+func (u *Usecase) CreateDirectory(path domain.Path, ownerToken string) error {
 	parentNode, err := u.repo.GetNodeByPath(path.Parent())
 	if err != nil {
 		return fmt.Errorf("error getting parent directory: %w", err)
@@ -62,7 +62,7 @@ func (u Usecase) CreateDirectory(path domain.Path, ownerToken string) error {
 	return u.repo.CreateDirectory(parentNode.ID, path.Parent().String(), path.NodeName(), ownerToken)
 }
 
-func (u Usecase) DeletePath(path domain.Path, ownerToken string) error {
+func (u *Usecase) DeletePath(path domain.Path, ownerToken string) error {
 	node, err := u.repo.GetNodeByPath(path)
 	if err != nil {
 		return fmt.Errorf("error getting path: %w", err)
@@ -81,7 +81,7 @@ func (u Usecase) DeletePath(path domain.Path, ownerToken string) error {
 	}
 }
 
-func (u Usecase) CopyPath(srcPath, dstPath domain.Path, ownerToken string) error {
+func (u *Usecase) CopyPath(srcPath, dstPath domain.Path, ownerToken string) error {
 	srcNode, err := u.repo.GetNodeByPath(srcPath)
 	if err != nil {
 		return fmt.Errorf("error getting source path: %w", err)
@@ -120,7 +120,7 @@ func (u Usecase) CopyPath(srcPath, dstPath domain.Path, ownerToken string) error
 	return nil
 }
 
-func (u Usecase) MovePath(srcPath, dstPath domain.Path, ownerToken string) error {
+func (u *Usecase) MovePath(srcPath, dstPath domain.Path, ownerToken string) error {
 	srcNode, err := u.repo.GetNodeByPath(srcPath)
 	if err != nil {
 		return fmt.Errorf("error getting source path: %w", err)
@@ -160,7 +160,7 @@ func (u Usecase) MovePath(srcPath, dstPath domain.Path, ownerToken string) error
 
 }
 
-func (u Usecase) ListNodes(path domain.Path) ([]domain.Node, error) {
+func (u *Usecase) ListNodes(path domain.Path) ([]domain.Node, error) {
 	node, err := u.repo.GetNodeByPath(path)
 	if err != nil {
 		return nil, fmt.Errorf("error getting path: %w", err)
@@ -175,7 +175,7 @@ func (u Usecase) ListNodes(path domain.Path) ([]domain.Node, error) {
 	return nodes, nil
 }
 
-func (u Usecase) ListMessage(path domain.Path) ([]domain.Message, error) {
+func (u *Usecase) ListMessage(path domain.Path) ([]domain.Message, error) {
 	node, err := u.repo.GetNodeByPath(path)
 	if err != nil {
 		return nil, fmt.Errorf("error getting room: %w", err)
@@ -191,7 +191,6 @@ func (u Usecase) ListMessage(path domain.Path) ([]domain.Message, error) {
 }
 
 const (
-	addr        = ":9000"
 	ringSize    = 1024
 	defaultRoom = "lobby"
 )
@@ -252,13 +251,7 @@ type clientStream struct {
 	out  chan *pb.ServerMessage
 }
 
-type chatService struct {
-	pb.UnimplementedChatshServiceServer
-
-	rooms sync.Map
-}
-
-func (u Usecase) getRoom(name string) *Room {
+func (u *Usecase) getRoom(name string) *Room {
 	if v, ok := u.rooms.Load(name); ok {
 		return v.(*Room)
 	}
@@ -267,7 +260,7 @@ func (u Usecase) getRoom(name string) *Room {
 	return actual.(*Room)
 }
 
-func (u Usecase) StreamMessage(stream pb.ChatshService_StreamMessageServer) error {
+func (u *Usecase) StreamMessage(stream pb.ChatshService_StreamMessageServer) error {
 	p, _ := peer.FromContext(stream.Context())
 	remote := p.Addr.String()
 
@@ -315,7 +308,7 @@ func (u Usecase) StreamMessage(stream pb.ChatshService_StreamMessageServer) erro
 	}
 }
 
-func (u Usecase) SearchMessage(path domain.Path, pattern string) ([]domain.Message, error) {
+func (u *Usecase) SearchMessage(path domain.Path, pattern string) ([]domain.Message, error) {
 	node, err := u.repo.GetNodeByPath(path)
 	if err != nil {
 		return nil, fmt.Errorf("error getting room: %w", err)
@@ -330,7 +323,7 @@ func (u Usecase) SearchMessage(path domain.Path, pattern string) ([]domain.Messa
 	return messages, nil
 }
 
-func (u Usecase) WriteMessage(path domain.Path, message, ownerToken string) error {
+func (u *Usecase) WriteMessage(path domain.Path, message, ownerToken string) error {
 	node, err := u.repo.GetNodeByPath(path)
 	if err != nil {
 		return fmt.Errorf("error getting room: %w", err)

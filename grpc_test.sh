@@ -50,11 +50,6 @@ grpcurl -plaintext -import-path . -import-path grpc -proto grpc/chatsh.proto \
   -d '{"path": "/etc/test"}' \
   localhost:50051 fs.ChatshService/ListMessages
 
-# StreamMessage (ストリーミングRPCのため、実行すると接続が維持され、サーバーからのメッセージが表示され続けます)
-grpcurl -plaintext -import-path . -import-path grpc -proto grpc/chatsh.proto \
-  -d '{"path": "/example/stream_chat_room", "initi_token": "your_auth_token", "follow": true}' \
-  localhost:50051 fs.ChatshService/StreamMessage
-
 # ✅ SearchMessage
 grpcurl -plaintext -import-path . -import-path grpc -proto grpc/chatsh.proto \
   -d '{"path": "/etc/test", "pattern": "is"}' \
