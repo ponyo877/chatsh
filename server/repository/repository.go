@@ -44,7 +44,14 @@ func (r *Repository) GetConfig(ownerToken string) (domain.Config, error) {
 }
 
 func (r *Repository) CreateConfig(config domain.Config) error {
-	query := "INSERT INTO users (token, display_name, created_at) VALUES (?, ?, ?)"
+	query := `
+		INSERT INTO users (token, display_name, created_at)
+		VALUES (?, ?, ?)
+		ON CONFLICT (token) 
+		DO UPDATE SET 
+			display_name = EXCLUDED.display_name,
+			created_at = EXCLUDED.created_at
+	`
 	if _, err := r.db.Exec(query, config.OwnerToken, config.DisplayName, time.Now()); err != nil {
 		return fmt.Errorf("error inserting config: %w", err)
 	}
@@ -253,7 +260,7 @@ func (r *Repository) CreateMessage(roomID int, displayName, message string) erro
 }
 
 func (r *Repository) ListMessages(roomID, limit, offset int) ([]domain.Message, error) {
-	query := "SELECT id, display_name, content, created_at FROM messages WHERE room_id = ? ORDER BY created_at LIMIT ? OFFSET ?"
+	query := "SELECT id, display_name, content, created_at FROM messages WHERE room_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?"
 	rows, err := r.db.Query(query, roomID, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query messages for room %d: %w", roomID, err)
