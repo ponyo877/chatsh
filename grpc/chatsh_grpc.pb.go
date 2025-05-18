@@ -28,10 +28,10 @@ const (
 	ChatshService_CopyPath_FullMethodName             = "/fs.ChatshService/CopyPath"
 	ChatshService_MovePath_FullMethodName             = "/fs.ChatshService/MovePath"
 	ChatshService_ListNodes_FullMethodName            = "/fs.ChatshService/ListNodes"
-	ChatshService_ListMessages_FullMethodName         = "/fs.ChatshService/ListMessages"
 	ChatshService_StreamMessage_FullMethodName        = "/fs.ChatshService/StreamMessage"
 	ChatshService_SearchMessage_FullMethodName        = "/fs.ChatshService/SearchMessage"
 	ChatshService_WriteMessage_FullMethodName         = "/fs.ChatshService/WriteMessage"
+	ChatshService_ListMessages_FullMethodName         = "/fs.ChatshService/ListMessages"
 )
 
 // ChatshServiceClient is the client API for ChatshService service.
@@ -47,10 +47,10 @@ type ChatshServiceClient interface {
 	CopyPath(ctx context.Context, in *CopyPathRequest, opts ...grpc.CallOption) (*CopyPathResponse, error)
 	MovePath(ctx context.Context, in *MovePathRequest, opts ...grpc.CallOption) (*MovePathResponse, error)
 	ListNodes(ctx context.Context, in *ListNodesRequest, opts ...grpc.CallOption) (*ListNodesResponse, error)
-	ListMessages(ctx context.Context, in *ListMessagesRequest, opts ...grpc.CallOption) (*ListMessagesResponse, error)
 	StreamMessage(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ClientMessage, ServerMessage], error)
 	SearchMessage(ctx context.Context, in *SearchMessageRequest, opts ...grpc.CallOption) (*SearchMessageResponse, error)
 	WriteMessage(ctx context.Context, in *WriteMessageRequest, opts ...grpc.CallOption) (*WriteMessageResponse, error)
+	ListMessages(ctx context.Context, in *ListMessagesRequest, opts ...grpc.CallOption) (*ListMessagesResponse, error)
 }
 
 type chatshServiceClient struct {
@@ -151,16 +151,6 @@ func (c *chatshServiceClient) ListNodes(ctx context.Context, in *ListNodesReques
 	return out, nil
 }
 
-func (c *chatshServiceClient) ListMessages(ctx context.Context, in *ListMessagesRequest, opts ...grpc.CallOption) (*ListMessagesResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListMessagesResponse)
-	err := c.cc.Invoke(ctx, ChatshService_ListMessages_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *chatshServiceClient) StreamMessage(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ClientMessage, ServerMessage], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &ChatshService_ServiceDesc.Streams[0], ChatshService_StreamMessage_FullMethodName, cOpts...)
@@ -194,6 +184,16 @@ func (c *chatshServiceClient) WriteMessage(ctx context.Context, in *WriteMessage
 	return out, nil
 }
 
+func (c *chatshServiceClient) ListMessages(ctx context.Context, in *ListMessagesRequest, opts ...grpc.CallOption) (*ListMessagesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListMessagesResponse)
+	err := c.cc.Invoke(ctx, ChatshService_ListMessages_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ChatshServiceServer is the server API for ChatshService service.
 // All implementations must embed UnimplementedChatshServiceServer
 // for forward compatibility.
@@ -207,10 +207,10 @@ type ChatshServiceServer interface {
 	CopyPath(context.Context, *CopyPathRequest) (*CopyPathResponse, error)
 	MovePath(context.Context, *MovePathRequest) (*MovePathResponse, error)
 	ListNodes(context.Context, *ListNodesRequest) (*ListNodesResponse, error)
-	ListMessages(context.Context, *ListMessagesRequest) (*ListMessagesResponse, error)
 	StreamMessage(grpc.BidiStreamingServer[ClientMessage, ServerMessage]) error
 	SearchMessage(context.Context, *SearchMessageRequest) (*SearchMessageResponse, error)
 	WriteMessage(context.Context, *WriteMessageRequest) (*WriteMessageResponse, error)
+	ListMessages(context.Context, *ListMessagesRequest) (*ListMessagesResponse, error)
 	mustEmbedUnimplementedChatshServiceServer()
 }
 
@@ -248,9 +248,6 @@ func (UnimplementedChatshServiceServer) MovePath(context.Context, *MovePathReque
 func (UnimplementedChatshServiceServer) ListNodes(context.Context, *ListNodesRequest) (*ListNodesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListNodes not implemented")
 }
-func (UnimplementedChatshServiceServer) ListMessages(context.Context, *ListMessagesRequest) (*ListMessagesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListMessages not implemented")
-}
 func (UnimplementedChatshServiceServer) StreamMessage(grpc.BidiStreamingServer[ClientMessage, ServerMessage]) error {
 	return status.Errorf(codes.Unimplemented, "method StreamMessage not implemented")
 }
@@ -259,6 +256,9 @@ func (UnimplementedChatshServiceServer) SearchMessage(context.Context, *SearchMe
 }
 func (UnimplementedChatshServiceServer) WriteMessage(context.Context, *WriteMessageRequest) (*WriteMessageResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method WriteMessage not implemented")
+}
+func (UnimplementedChatshServiceServer) ListMessages(context.Context, *ListMessagesRequest) (*ListMessagesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListMessages not implemented")
 }
 func (UnimplementedChatshServiceServer) mustEmbedUnimplementedChatshServiceServer() {}
 func (UnimplementedChatshServiceServer) testEmbeddedByValue()                       {}
@@ -443,24 +443,6 @@ func _ChatshService_ListNodes_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ChatshService_ListMessages_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListMessagesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ChatshServiceServer).ListMessages(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ChatshService_ListMessages_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChatshServiceServer).ListMessages(ctx, req.(*ListMessagesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _ChatshService_StreamMessage_Handler(srv interface{}, stream grpc.ServerStream) error {
 	return srv.(ChatshServiceServer).StreamMessage(&grpc.GenericServerStream[ClientMessage, ServerMessage]{ServerStream: stream})
 }
@@ -500,6 +482,24 @@ func _ChatshService_WriteMessage_Handler(srv interface{}, ctx context.Context, d
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ChatshServiceServer).WriteMessage(ctx, req.(*WriteMessageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ChatshService_ListMessages_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListMessagesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatshServiceServer).ListMessages(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChatshService_ListMessages_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatshServiceServer).ListMessages(ctx, req.(*ListMessagesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -548,16 +548,16 @@ var ChatshService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ChatshService_ListNodes_Handler,
 		},
 		{
-			MethodName: "ListMessages",
-			Handler:    _ChatshService_ListMessages_Handler,
-		},
-		{
 			MethodName: "SearchMessage",
 			Handler:    _ChatshService_SearchMessage_Handler,
 		},
 		{
 			MethodName: "WriteMessage",
 			Handler:    _ChatshService_WriteMessage_Handler,
+		},
+		{
+			MethodName: "ListMessages",
+			Handler:    _ChatshService_ListMessages_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

@@ -46,6 +46,22 @@ func (u *Usecase) SetConfig(config domain.Config) error {
 	return nil
 }
 
+func (u *Usecase) ListMessages(path domain.Path, limit int32) ([]domain.Message, error) {
+	node, err := u.repo.GetNodeByPath(path)
+	if err != nil {
+		return nil, fmt.Errorf("error getting room: %w", err)
+	}
+	if node.Type != domain.NodeTypeRoom {
+		return nil, fmt.Errorf("path '%s' is not a room", path)
+	}
+
+	messages, err := u.repo.ListMessages(node.ID, int(limit), 0)
+	if err != nil {
+		return nil, fmt.Errorf("error listing messages for roomID %d: %w", node.ID, err)
+	}
+	return messages, nil
+}
+
 func (u *Usecase) CreateRoom(path domain.Path, ownerToken string) error {
 	parentNode, err := u.repo.GetNodeByPath(path.Parent())
 	if err != nil {
@@ -175,21 +191,6 @@ func (u *Usecase) ListNodes(path domain.Path) ([]domain.Node, error) {
 	return nodes, nil
 }
 
-func (u *Usecase) ListMessage(path domain.Path) ([]domain.Message, error) {
-	node, err := u.repo.GetNodeByPath(path)
-	if err != nil {
-		return nil, fmt.Errorf("error getting room: %w", err)
-	}
-	if node.Type != domain.NodeTypeRoom {
-		return nil, fmt.Errorf("path is not a room")
-	}
-	messages, err := u.repo.ListMessages(node.ID, messageLimit, 0)
-	if err != nil {
-		return nil, fmt.Errorf("error listing messages: %w", err)
-	}
-	return messages, nil
-}
-
 const (
 	ringSize    = 1024
 	defaultRoom = "lobby"
@@ -268,42 +269,92 @@ func (u *Usecase) StreamMessage(stream pb.ChatshService_StreamMessageServer) err
 	if err != nil {
 		return err
 	}
-	join := first.GetJoin()
-	if join == nil {
-		return fmt.Errorf("first message must be Join")
-	}
-	if join.Name == "" {
-		join.Name = remote
-	}
-	if join.Room == "" {
-		join.Room = defaultRoom
+
+	var clientName string
+	var targetRoomPath string
+	var roomID int
+	var isTailMode bool = false
+
+	if join := first.GetJoin(); join != nil {
+		clientName = join.GetName()
+		if clientName == "" {
+			clientName = remote
+		}
+		targetRoomPath = join.GetRoom()
+		if targetRoomPath == "" {
+			targetRoomPath = defaultRoom
+		}
+		isTailMode = false
+	} else if tailReq := first.GetTail(); tailReq != nil {
+		targetRoomPath = tailReq.GetRoomPath()
+		if targetRoomPath == "" {
+			return fmt.Errorf("TailRequest must specify a room_path")
+		}
+		clientName = "tail_client_" + remote
+		isTailMode = true
+	} else {
+		return fmt.Errorf("first message must be Join or TailRequest")
 	}
 
-	room := u.getRoom(join.Room)
-	cli := &clientStream{name: join.Name, room: room, out: make(chan *pb.ServerMessage, 32)}
+	roomNode, err := u.repo.GetNodeByPath(domain.NewPath(targetRoomPath))
+	if err != nil {
+		return fmt.Errorf("failed to get room details from DB for '%s': %w", targetRoomPath, err)
+	}
+	if roomNode.Type != domain.NodeTypeRoom {
+		return fmt.Errorf("path '%s' is not a room", targetRoomPath)
+	}
+	roomID = roomNode.ID
+
+	room := u.getRoom(targetRoomPath)
+	cli := &clientStream{name: clientName, room: room, out: make(chan *pb.ServerMessage, 32)}
 	room.add(cli)
 	defer room.remove(cli)
 
-	room.publish(cli.name, fmt.Sprintf("🟢 joined #%s", join.Room))
-	defer room.publish(cli.name, fmt.Sprintf("🔴 left #%s", join.Room))
-
 	go func() {
 		for msg := range cli.out {
-			_ = stream.Send(msg)
+			if errSend := stream.Send(msg); errSend != nil {
+				fmt.Printf("error sending message to %s: %v\n", cli.name, errSend)
+				return
+			}
 		}
 	}()
 
+	if !isTailMode {
+		joinText := fmt.Sprintf("joined #%s as %s", targetRoomPath, cli.name)
+		room.publish(cli.name, joinText)
+		if errDb := u.repo.CreateMessage(roomID, cli.name, joinText); errDb != nil {
+			fmt.Printf("Error saving join message to DB for roomID %d: %v\n", roomID, errDb)
+		}
+
+		defer func() {
+			leftText := fmt.Sprintf("left #%s", targetRoomPath)
+			room.publish(cli.name, leftText)
+			if errDb := u.repo.CreateMessage(roomID, cli.name, leftText); errDb != nil {
+				fmt.Printf("Error saving left message to DB for roomID %d: %v\n", roomID, errDb)
+			}
+		}()
+	}
+
 	for {
+		if isTailMode {
+			fmt.Printf("Received unexpected message from tail client %s\n", cli.name)
+			continue
+		}
 		in, err := stream.Recv()
 		if err != nil {
+			fmt.Printf("Client %s disconnected: %v\n", cli.name, err)
 			return nil
 		}
+
 		if chat := in.GetChat(); chat != nil {
-			txt := strings.TrimSpace(chat.Text)
+			txt := strings.TrimSpace(chat.GetText())
 			if txt == "" {
 				continue
 			}
 			room.publish(cli.name, txt)
+			if errDb := u.repo.CreateMessage(roomID, cli.name, txt); errDb != nil {
+				fmt.Printf("Error saving chat message to DB for roomID %d: %v\n", roomID, errDb)
+			}
 		}
 	}
 }

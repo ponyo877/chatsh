@@ -241,7 +241,7 @@ func Execute() {
 	p := prompt.New(
 		executor,
 		completer,
-		prompt.OptionPrefix("❯❯❯ "),
+		prompt.OptionPrefix("❯ "),
 		prompt.OptionTitle("chatsh interactive mode"),
 	)
 	p.Run()

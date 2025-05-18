@@ -44,9 +44,8 @@ var catCmd = &cobra.Command{
 			// Using ListMessages to simulate cat.
 			// This assumes a "room" path corresponds to a file and its messages are its content.
 			req := &pb.ListMessagesRequest{
-				Path: targetPath,
-				// ListMessagesRequest does not have OwnerToken in the proto definition.
-				// If authentication is needed for this, the proto would need to be updated.
+				RoomPath: targetPath,
+				Limit:    1000,
 			}
 
 			res, err := chatshClient.ListMessages(ctx, req)

@@ -17,11 +17,18 @@ service ChatshService {
   rpc CopyPath(CopyPathRequest) returns (CopyPathResponse);
   rpc MovePath(MovePathRequest) returns (MovePathResponse);
   rpc ListNodes(ListNodesRequest) returns (ListNodesResponse);
-  rpc ListMessages(ListMessagesRequest) returns (ListMessagesResponse);
   rpc StreamMessage(stream ClientMessage) returns (stream ServerMessage);
   rpc SearchMessage(SearchMessageRequest) returns (SearchMessageResponse);
   rpc WriteMessage(WriteMessageRequest) returns (WriteMessageResponse);
+  rpc ListMessages(ListMessagesRequest) returns (ListMessagesResponse);
 }
+
+message ListMessagesRequest {
+  string room_path = 1;
+  int32 limit = 2;
+}
+
+message ListMessagesResponse { repeated Message messages = 1; }
 
 message Status {
   bool ok = 1;
@@ -103,10 +110,6 @@ message ListNodesRequest { string path = 1; }
 
 message ListNodesResponse { repeated NodeInfo entries = 1; }
 
-message ListMessagesRequest { string path = 1; }
-
-message ListMessagesResponse { repeated Message messages = 1; }
-
 message StreamMessageRequest {
   string path = 1;
   string initi_token = 2;
@@ -127,8 +130,11 @@ message ClientMessage {
   oneof payload {
     Join join = 1;
     Chat chat = 2;
+    Tail tail = 3; // For tailing a room
   }
 }
+
+message Tail { string room_path = 1; }
 
 message ServerMessage {
   string name = 1;

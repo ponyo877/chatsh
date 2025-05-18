@@ -124,24 +124,6 @@ func (a *Adaptor) ListNodes(ctx context.Context, in *pb.ListNodesRequest) (*pb.L
 	return &pb.ListNodesResponse{Entries: pbNodeInfos}, nil
 }
 
-func (a *Adaptor) ListMessages(ctx context.Context, in *pb.ListMessagesRequest) (*pb.ListMessagesResponse, error) {
-	messages, err := a.uc.ListMessage(domain.NewPath(in.GetPath()))
-	if err != nil {
-		log.Printf("Error listing messages: %v", err)
-		return nil, err
-	}
-
-	pbMessages := make([]*pb.Message, len(messages))
-	for i, message := range messages {
-		pbMessages[i] = &pb.Message{
-			TextContent: message.Content,
-			OwnerName:   message.DisplayName,
-			Created:     timestamppb.New(message.CreatedAt),
-		}
-	}
-	return &pb.ListMessagesResponse{Messages: pbMessages}, nil
-}
-
 func (a *Adaptor) SearchMessage(ctx context.Context, in *pb.SearchMessageRequest) (*pb.SearchMessageResponse, error) {
 	messages, err := a.uc.SearchMessage(domain.NewPath(in.GetPath()), in.GetPattern())
 	if err != nil {
@@ -175,4 +157,22 @@ func (a *Adaptor) StreamMessage(stream pb.ChatshService_StreamMessageServer) err
 		return err
 	}
 	return nil
+}
+
+func (a *Adaptor) ListMessages(ctx context.Context, in *pb.ListMessagesRequest) (*pb.ListMessagesResponse, error) {
+	messages, err := a.uc.ListMessages(domain.NewPath(in.GetRoomPath()), in.GetLimit())
+	if err != nil {
+		log.Printf("Error getting past messages for room %s: %v", in.GetRoomPath(), err)
+		return nil, err
+	}
+
+	pbMessages := make([]*pb.Message, len(messages))
+	for i, message := range messages {
+		pbMessages[i] = &pb.Message{
+			TextContent: message.Content,
+			OwnerName:   message.DisplayName,
+			Created:     timestamppb.New(message.CreatedAt),
+		}
+	}
+	return &pb.ListMessagesResponse{Messages: pbMessages}, nil
 }

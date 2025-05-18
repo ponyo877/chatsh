@@ -13,10 +13,10 @@ type Usecase interface {
 	CreateRoom(path domain.Path, ownerToken string) error
 	CreateDirectory(path domain.Path, ownerToken string) error
 	DeletePath(path domain.Path, ownerToken string) error
-	ListMessage(path domain.Path) ([]domain.Message, error)
 	ListNodes(path domain.Path) ([]domain.Node, error)
 	MovePath(srcPath domain.Path, dstPath domain.Path, ownerToken string) error
 	SearchMessage(path domain.Path, pattern string) ([]domain.Message, error)
 	StreamMessage(stream pb.ChatshService_StreamMessageServer) error
 	WriteMessage(path domain.Path, message, ownerToken string) error
+	ListMessages(path domain.Path, limit int32) ([]domain.Message, error)
 }
