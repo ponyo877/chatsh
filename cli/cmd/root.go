@@ -284,7 +284,16 @@ func Execute() {
 		}
 	}()
 
-	fmt.Println("entering interactive mode, type 'exit' to quit")
+	fmt.Println(`
+ ██████╗██╗  ██╗ █████╗ ████████╗███████╗██╗  ██╗
+██╔════╝██║  ██║██╔══██╗╚══██╔══╝██╔════╝██║  ██║
+██║     ███████║███████║   ██║   ███████╗███████║
+██║     ██╔══██║██╔══██║   ██║   ╚════██║██╔══██║
+╚██████╗██║  ██║██║  ██║   ██║   ███████║██║  ██║
+ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝  ╚═╝
+     [ Interactive Shell for Smart Conversation ]
+            v1.0.0 - Type 'exit' to quit
+		`)
 	p := prompt.New(
 		executor,
 		completer,
