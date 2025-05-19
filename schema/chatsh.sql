@@ -61,3 +61,6 @@ INSERT INTO directories (name, parent_id, owner_token, path, created_at) VALUES
 ('tmp', 1, 'admin', '/tmp', '2025-05-01 00:00:00'),
 ('run', 1, 'admin', '/run', '2025-05-01 00:00:00'),
 ('sys', 1, 'admin', '/sys', '2025-05-01 00:00:00');
+
+INSERT INTO directories (name, parent_id, owner_token, path, created_at) VALUES
+('chatsh', 10, 'admin', '/home/chatsh', '2025-05-01 00:00:00');

@@ -5,7 +5,9 @@ package cmd
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,10 +15,12 @@ import (
 
 	"github.com/c-bata/go-prompt"
 	"github.com/mattn/go-shellwords"
+	"github.com/oklog/ulid/v2"
 	pb "github.com/ponyo877/chatsh/grpc"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
@@ -24,8 +28,10 @@ var (
 	cfgFile           string
 	ownerToken        string
 	grpcServerAddress string
+	isSecure          bool
 	chatshClient      pb.ChatshServiceClient
 	grpcConn          *grpc.ClientConn
+	configCreated     bool
 )
 
 const (
@@ -33,6 +39,8 @@ const (
 	homeDirectoryKey     = "home_directory"
 	ownerTokenKey        = "owner_token"
 	grpcServerAddressKey = "grpc_server_address"
+	isSecureKey          = "is_secure"
+	defaultServerAddress = "chatsh-app-1083612487436.asia-northeast1.run.app:443"
 )
 
 var rootCmd = &cobra.Command{
@@ -45,12 +53,51 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		conn, err := grpc.NewClient(grpcServerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if viper.ConfigFileUsed() == "" {
+			fmt.Fprintln(os.Stderr, "Configuration file not found. create config: ~/.chatsh.yaml")
+			if err_create := createDefaultConfig(); err_create != nil {
+				return fmt.Errorf("failed to create default config: %w", err_create)
+			}
+			if err_read := viper.ReadInConfig(); err_read != nil {
+				return fmt.Errorf("failed to read newly created config: %w", err_read)
+			}
+		}
+
+		// Ensure global variables are fresh, especially if config was just created.
+		ownerToken = viper.GetString(ownerTokenKey)
+		grpcServerAddress = viper.GetString(grpcServerAddressKey)
+		isSecure = viper.GetBool(isSecureKey)
+		ownerToken = viper.GetString(ownerTokenKey)
+
+		credential := insecure.NewCredentials()
+		if isSecure {
+			credential = credentials.NewTLS(&tls.Config{})
+		}
+		conn, err := grpc.NewClient(grpcServerAddress, grpc.WithTransportCredentials(credential))
 		if err != nil {
 			return fmt.Errorf("did not connect to gRPC server: %w", err)
 		}
 		grpcConn = conn
 		chatshClient = pb.NewChatshServiceClient(conn)
+
+		// If config was just created, call SetConfig on the server
+		if configCreated {
+			setConfigReq := &pb.SetConfigRequest{
+				OwnerToken:  viper.GetString(ownerTokenKey),  // Use the newly generated token
+				DisplayName: viper.GetString("display_name"), // "test"
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			_, err := chatshClient.SetConfig(ctx, setConfigReq)
+			if err != nil {
+				// Log error but don't necessarily block CLI usage if server SetConfig fails
+				fmt.Fprintf(os.Stderr, "Warning: failed to set initial config on server: %v\n", err)
+			} else {
+				fmt.Println("Initial configuration set on server.")
+			}
+			configCreated = false // Reset flag
+		}
+
 		return nil
 	},
 	PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
@@ -253,17 +300,50 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.cli.yaml)")
 	rootCmd.PersistentFlags().String("home-directory", "", "Home directory for the CLI")
 	rootCmd.PersistentFlags().String("owner-token", "", "Owner token for authentication with the chatsh server")
-	rootCmd.PersistentFlags().String("grpc-server", "localhost:50051", "Address of the gRPC chatsh server (e.g., localhost:50051)")
+	rootCmd.PersistentFlags().String("grpc-server", defaultServerAddress, "Address of the gRPC chatsh server (e.g., "+defaultServerAddress+")")
+	rootCmd.PersistentFlags().Bool("is-secure", true, "Use secure gRPC connection (default: true)")
 
 	viper.BindPFlag(homeDirectoryKey, rootCmd.PersistentFlags().Lookup("home-directory"))
 	viper.BindPFlag(ownerTokenKey, rootCmd.PersistentFlags().Lookup("owner-token"))
 	viper.BindPFlag(grpcServerAddressKey, rootCmd.PersistentFlags().Lookup("grpc-server"))
+	viper.BindPFlag(isSecureKey, rootCmd.PersistentFlags().Lookup("is-secure"))
 	viper.SetDefault(homeDirectoryKey, "/home/chatsh")
-	viper.SetDefault(currentDirectoryKey, "/home/chatsh")
-	viper.SetDefault(ownerTokenKey, "default_token")
-	viper.SetDefault(grpcServerAddressKey, "localhost:50051")
+	viper.SetDefault(currentDirectoryKey, "/")
+	viper.SetDefault(ownerTokenKey, "")
+	viper.SetDefault(grpcServerAddressKey, defaultServerAddress)
+	viper.SetDefault(isSecureKey, true)
+	viper.SetDefault("display_name", "test")
 
 }
+
+func createDefaultConfig() error {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("could not get user home directory: %w", err)
+	}
+	configPath := filepath.Join(home, ".chatsh.yaml")
+
+	// Generate ULID for owner_token
+	entropy := ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)
+	newOwnerToken := ulid.MustNew(ulid.Timestamp(time.Now()), entropy).String()
+
+	viper.Set(ownerTokenKey, newOwnerToken)
+	viper.Set("display_name", "test")
+	viper.SetConfigFile(configPath)
+
+	if err := viper.SafeWriteConfig(); err != nil {
+		if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
+			return fmt.Errorf("could not create config directory: %w", err)
+		}
+		if err := viper.WriteConfigAs(configPath); err != nil {
+			return fmt.Errorf("could not write config file: %w", err)
+		}
+	}
+	fmt.Printf("Default configuration file created at %s with owner_token: %s\n", configPath, newOwnerToken)
+	configCreated = true // Set flag
+	return nil
+}
+
 func initConfig() {
 	if cfgFile != "" {
 		viper.SetConfigFile(cfgFile)
@@ -271,21 +351,22 @@ func initConfig() {
 		home, err := os.UserHomeDir()
 		cobra.CheckErr(err)
 
-		viper.AddConfigPath(home)
+		configDir := home
+
+		viper.AddConfigPath(configDir)
 		viper.SetConfigType("yaml")
-		viper.SetConfigName(".cli")
+		viper.SetConfigName(".chatsh")
 	}
 
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			fmt.Fprintln(os.Stderr, "Config file not found, using default values and environment variables.")
-		} else {
-			fmt.Fprintln(os.Stderr, "Error reading config file:", err)
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			fmt.Fprintf(os.Stderr, "Error reading config file (%s): %v\n", viper.ConfigFileUsed(), err)
 		}
 	}
 
 	ownerToken = viper.GetString(ownerTokenKey)
 	grpcServerAddress = viper.GetString(grpcServerAddressKey)
+	isSecure = viper.GetBool(isSecureKey)
 }
