@@ -73,8 +73,16 @@ of the current directory managed by this CLI.`,
 			default:
 				nodeType = "UNKN"
 			}
-			// Basic output, can be enhanced with more details like owner, modified time
-			fmt.Printf("%s\t%s\n", nodeType, entry.Name)
+
+			formattedTime := "           "
+			if entry.Modified != nil {
+				t := entry.Modified.AsTime()
+				monthStr := t.Format("1")
+				dayStr := fmt.Sprintf("%2d", t.Day())
+				timeStr := t.Format("15:04")
+				formattedTime = fmt.Sprintf("%s %s %s", monthStr, dayStr, timeStr)
+			}
+			fmt.Printf("%-4s  %s %s\n", nodeType, formattedTime, entry.Name)
 		}
 	},
 }
