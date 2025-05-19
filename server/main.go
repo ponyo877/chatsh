@@ -2,10 +2,12 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
+	"fmt" // ioutilを追加
 	"log"
 	"net"
+	"os"
 	"regexp"
+	"strings" // stringsを追加
 
 	"github.com/mattn/go-sqlite3"
 	pb "github.com/ponyo877/chatsh/grpc"
@@ -16,16 +18,17 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
-var (
-	port int = 50051
-)
-
 func regex(re, s string) (bool, error) {
 	return regexp.MatchString(re, s)
 }
 
 func main() {
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	portEnv := os.Getenv("PORT")
+	if portEnv == "" {
+		portEnv = "50051"
+	}
+
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", portEnv))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
@@ -40,6 +43,39 @@ func main() {
 		log.Fatalf("failed to open db: %v", err)
 	}
 	defer conn.Close()
+
+	rows, err := conn.Query("SELECT name FROM sqlite_master WHERE type='table' AND name='users';")
+	if err != nil {
+		log.Fatalf("failed to query sqlite_master: %v", err)
+	}
+	defer rows.Close()
+
+	tableExists := false
+	if rows.Next() {
+		tableExists = true
+	}
+
+	if !tableExists {
+		log.Println("Users table not found, initializing database from schema/chatsh.sql...")
+		schemaContent, err := os.ReadFile("./schema/chatsh.sql")
+		if err != nil {
+			log.Fatalf("failed to read schema/chatsh.sql: %v", err)
+		}
+
+		statements := strings.Split(string(schemaContent), ";")
+		for _, stmt := range statements {
+			trimmedStmt := strings.TrimSpace(stmt)
+			if trimmedStmt == "" {
+				continue
+			}
+			_, err := conn.Exec(trimmedStmt)
+			if err != nil {
+				log.Fatalf("failed to execute schema statement: %s, error: %v", trimmedStmt, err)
+			}
+		}
+		log.Println("Database initialized successfully.")
+	}
+
 	rp := repository.NewRepository(conn)
 	uc := usecase.NewUsecase(rp)
 	ad := adaptor.NewAdaptor(uc)
@@ -47,7 +83,7 @@ func main() {
 	pb.RegisterChatshServiceServer(s, ad)
 	reflection.Register(s)
 
-	log.Printf("Server is running on port %d", port)
+	log.Printf("Server is running on port %s", portEnv)
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}

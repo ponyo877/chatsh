@@ -26,6 +26,7 @@ go.work.sum
 
 # sqlite
 *.db
+*.db.*
 
 # vscode
 .vscode/

@@ -1,0 +1,6 @@
+dbs:
+  - path: /app/chatsh.db
+    replicas:
+      - type: gcs
+        bucket: chatsh-db
+        path: chatsh.db
