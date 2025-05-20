@@ -10,7 +10,9 @@ Built with Go and powered by gRPC, chatsh aims to be your go-to interface for bo
 
 ## 🎬 See it in Action!
 
-https://github.com/user-attachments/assets/79b90e61-2d2c-4421-a0d0-1eba00193e73
+
+<div><video controls src="https://github.com/user-attachments/assets/546bae03-cbf1-4628-b3e2-0ac4ff2d8e94" autoplay playsinline muted="false"></video></div>
+
 
 ---
 
