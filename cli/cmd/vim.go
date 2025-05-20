@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"time"
@@ -24,7 +25,18 @@ var vimCmd = &cobra.Command{
 You can type messages at the bottom and see the chat history above.`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		roomPath := args[0]
+		pathArg := args[0]
+		currentBaseDir := viper.GetString(currentDirectoryKey)
+		if currentBaseDir == "" {
+			currentBaseDir = viper.GetString(homeDirectoryKey)
+		}
+
+		var targetPath string
+		if filepath.IsAbs(pathArg) {
+			targetPath = pathArg
+		} else {
+			targetPath = filepath.Join(currentBaseDir, pathArg)
+		}
 		userName, _ := cmd.Flags().GetString("name")
 
 		if userName == "" {
@@ -47,7 +59,7 @@ You can type messages at the bottom and see the chat history above.`,
 			}
 		}
 
-		if err := runChatUITview(chatshClient, userName, roomPath); err != nil {
+		if err := runChatUITview(chatshClient, userName, targetPath); err != nil {
 			fmt.Fprintf(os.Stderr, "Chat UI error: %v\n", err)
 			os.Exit(1)
 		}

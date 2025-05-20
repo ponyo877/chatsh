@@ -273,27 +273,22 @@ func (u *Usecase) StreamMessage(stream pb.ChatshService_StreamMessageServer) err
 	var clientName string
 	var targetRoomPath string
 	var roomID int
-	var isTailMode bool = false
+	isTailMode := false
 
 	if join := first.GetJoin(); join != nil {
 		clientName = join.GetName()
-		if clientName == "" {
-			clientName = remote
-		}
 		targetRoomPath = join.GetRoom()
-		if targetRoomPath == "" {
-			targetRoomPath = defaultRoom
-		}
-		isTailMode = false
-	} else if tailReq := first.GetTail(); tailReq != nil {
-		targetRoomPath = tailReq.GetRoomPath()
-		if targetRoomPath == "" {
-			return fmt.Errorf("TailRequest must specify a room_path")
-		}
-		clientName = "tail_client_" + remote
+	} else if tail := first.GetTail(); tail != nil {
+		targetRoomPath = tail.GetRoomPath()
 		isTailMode = true
 	} else {
 		return fmt.Errorf("first message must be Join or TailRequest")
+	}
+	if clientName == "" {
+		clientName = remote
+	}
+	if targetRoomPath == "" {
+		targetRoomPath = defaultRoom
 	}
 
 	roomNode, err := u.repo.GetNodeByPath(domain.NewPath(targetRoomPath))
