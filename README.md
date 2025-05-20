@@ -1,6 +1,5 @@
 # chatsh: Your Terminal, Supercharged with Conversation! 🚀
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/ponyo877/chatsh)](https://goreportcard.com/report/github.com/ponyo877/chatsh)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **Tired of context-switching between your terminal and chat apps? Wish your command line was a bit more... conversational?**
@@ -10,7 +9,8 @@
 Built with Go and powered by gRPC, chatsh aims to be your go-to interface for both productive work and engaging discussions.
 
 ## 🎬 See it in Action!
-*(We're working on a cool GIF to show off chatsh! In the meantime, picture your terminal coming alive with chat bubbles and smart commands.)*
+
+https://github.com/user-attachments/assets/79b90e61-2d2c-4421-a0d0-1eba00193e73
 
 ---
 
