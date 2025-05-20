@@ -44,6 +44,11 @@ func main() {
 	}
 	defer conn.Close()
 
+	// Enable WAL mode for better concurrency
+	if _, err := conn.Exec("PRAGMA journal_mode=WAL;"); err != nil {
+		log.Fatalf("failed to set WAL mode: %v", err)
+	}
+
 	rows, err := conn.Query("SELECT name FROM sqlite_master WHERE type='table' AND name='users';")
 	if err != nil {
 		log.Fatalf("failed to query sqlite_master: %v", err)
