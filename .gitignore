@@ -32,3 +32,6 @@ chatsh
 # vscode
 .vscode/
 deploy.sh
+
+# Added by goreleaser init:
+dist/
