@@ -306,10 +306,10 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.cli.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default: $HOME/.chatsh.yaml)")
 	rootCmd.PersistentFlags().String("home-directory", "", "Home directory for the CLI")
 	rootCmd.PersistentFlags().String("owner-token", "", "Owner token for authentication with the chatsh server")
-	rootCmd.PersistentFlags().String("grpc-server", defaultServerAddress, "Address of the gRPC chatsh server (e.g., "+defaultServerAddress+")")
+	rootCmd.PersistentFlags().String("grpc-server", defaultServerAddress, "chatsh server")
 	rootCmd.PersistentFlags().Bool("is-secure", true, "Use secure gRPC connection (default: true)")
 
 	viper.BindPFlag(homeDirectoryKey, rootCmd.PersistentFlags().Lookup("home-directory"))
