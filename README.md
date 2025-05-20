@@ -14,6 +14,16 @@ https://github.com/user-attachments/assets/79b90e61-2d2c-4421-a0d0-1eba00193e73
 
 ---
 
+## 💾 Installation
+
+The easiest way to install chatsh is using Homebrew (macOS or Linux):
+
+```bash
+brew install ponyo877/tap/chatsh
+```
+
+---
+
 ## ✨ Why chatsh?
 
 *   **Conversational CLI:** Imagine an `ls` that understands context, or a `vim`-like interface not just for files, but for dedicated chat rooms!

@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gdamore/tcell/v2"
 	pb "github.com/ponyo877/chatsh/grpc"
 
-	"github.com/gdamore/tcell/v2" // tviewが内部で使用するが、直接は使わないので削除しても良い場合がある
 	"github.com/rivo/tview"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
