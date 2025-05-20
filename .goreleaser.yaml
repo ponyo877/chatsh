@@ -52,3 +52,9 @@ release:
     ---
 
     Released by [GoReleaser](https://github.com/goreleaser/goreleaser).
+
+brews:
+  - repository:
+      owner: ponyo877
+      name: homebrew-tap
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
