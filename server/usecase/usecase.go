@@ -332,7 +332,7 @@ func (u *Usecase) StreamMessage(stream pb.ChatshService_StreamMessageServer) err
 
 	for {
 		if isTailMode {
-			fmt.Printf("Received unexpected message from tail client %s\n", cli.name)
+			// fmt.Printf("Received unexpected message from tail client %s\n", cli.name)
 			continue
 		}
 		in, err := stream.Recv()
