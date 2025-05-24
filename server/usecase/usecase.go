@@ -330,11 +330,13 @@ func (u *Usecase) StreamMessage(stream pb.ChatshService_StreamMessageServer) err
 		}()
 	}
 
+	// tailModeの場合は受信ループを実行しない
+	if isTailMode {
+		// tailModeの場合はストリームを開いたまま待機
+		<-stream.Context().Done()
+		return nil
+	}
 	for {
-		if isTailMode {
-			// fmt.Printf("Received unexpected message from tail client %s\n", cli.name)
-			continue
-		}
 		in, err := stream.Recv()
 		if err != nil {
 			fmt.Printf("Client %s disconnected: %v\n", cli.name, err)

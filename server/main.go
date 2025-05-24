@@ -45,9 +45,9 @@ func main() {
 	defer conn.Close()
 
 	// Enable WAL mode for better concurrency
-	if _, err := conn.Exec("PRAGMA journal_mode=WAL;"); err != nil {
-		log.Fatalf("failed to set WAL mode: %v", err)
-	}
+	// if _, err := conn.Exec("PRAGMA journal_mode=WAL;"); err != nil {
+	// 	log.Fatalf("failed to set WAL mode: %v", err)
+	// }
 
 	rows, err := conn.Query("SELECT name FROM sqlite_master WHERE type='table' AND name='users';")
 	if err != nil {
@@ -84,7 +84,10 @@ func main() {
 	rp := repository.NewRepository(conn)
 	uc := usecase.NewUsecase(rp)
 	ad := adaptor.NewAdaptor(uc)
-	s := grpc.NewServer()
+	s := grpc.NewServer(
+		grpc.MaxConcurrentStreams(1000),
+		grpc.NumStreamWorkers(10),
+	)
 	pb.RegisterChatshServiceServer(s, ad)
 	reflection.Register(s)
 
