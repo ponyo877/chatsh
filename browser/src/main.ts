@@ -134,7 +134,7 @@ const commands: Record<string, (args: string[], term: Terminal) => Promise<void>
             term.write('Creating room...');
             const response = await grpcClient.createRoom({
                 path: roomPath,
-                owner_token: appState.ownerToken
+                ownerToken: appState.ownerToken // Corrected
             });
 
             // Clear the "Creating room..." text
@@ -166,7 +166,7 @@ const commands: Record<string, (args: string[], term: Terminal) => Promise<void>
             term.write('Creating directory...');
             const response = await grpcClient.createDirectory({
                 path: dirPath,
-                owner_token: appState.ownerToken
+                ownerToken: appState.ownerToken // Corrected
             });
 
             // Clear the "Creating directory..." text

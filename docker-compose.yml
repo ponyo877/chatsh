@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  envoy:
+    image: envoyproxy/envoy:v1.28-latest
+    ports:
+      - "8080:8080" # gRPC-Web proxy port
+      - "9901:9901" # Envoy admin interface
+    volumes:
+      - ./envoy.yaml:/etc/envoy/envoy.yaml
+    command: /usr/local/bin/envoy -c /etc/envoy/envoy.yaml --log-level info
+    depends_on:
+      - chatsh-server
+    networks:
+      - chatsh-network
+
+  chatsh-server:
+    build:
+      context: .
+      dockerfile: DockerfileLocal
+    ports:
+      - "50051:50051" # gRPC server port
+    environment:
+      - PORT=50051
+    networks:
+      - chatsh-network
+
+networks:
+  chatsh-network:
+    driver: bridge

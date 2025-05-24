@@ -1,19 +1,39 @@
-// import { grpc } from '@improbable-eng/grpc-web';
-// For now, we'll implement without the actual grpc-web import to avoid type issues
-// This will be replaced with proper gRPC-Web implementation later
+import { createPromiseClient, PromiseClient } from "@bufbuild/connect";
+import { createGrpcWebTransport } from "@bufbuild/connect-web";
+import { ChatshService } from "./generated/chatsh_connect";
+import {
+    ListNodesRequest,
+    // ListNodesResponse, // Response type is inferred from client call
+    CreateRoomRequest,
+    // CreateRoomResponse,
+    CreateDirectoryRequest,
+    // CreateDirectoryResponse,
+    CheckDirectoryExistsRequest,
+    // CheckDirectoryExistsResponse,
+    WriteMessageRequest,
+    // WriteMessageResponse,
+    ListMessagesRequest,
+    // ListMessagesResponse,
+    NodeInfo as GrpcNodeInfo, // Keep alias for clarity in mapping
+    Message as GrpcMessage,   // Keep alias for clarity in mapping
+    NodeType as GrpcNodeType,
+    Status as GrpcStatus,
+} from "./generated/chatsh_pb";
+import { Timestamp } from "@bufbuild/protobuf"; // Correct Timestamp import
 
-// Types based on the proto file
-export interface NodeInfo {
-    name: string;
-    owner_name: string;
-    type: NodeType;
-    modified?: Date;
+// Re-exporting types for internal use, mapping from gRPC generated types
+export enum NodeType {
+    UNKNOWN = GrpcNodeType.UNKNOWN,
+    ROOM = GrpcNodeType.ROOM,
+    DIRECTORY = GrpcNodeType.DIRECTORY
 }
 
-export enum NodeType {
-    UNKNOWN = 0,
-    ROOM = 1,
-    DIRECTORY = 2
+// Our application's internal types - these will be what our UI consumes
+export interface NodeInfo {
+    name: string;
+    ownerName: string;
+    type: NodeType;
+    modified?: Date;
 }
 
 export interface Status {
@@ -21,111 +41,167 @@ export interface Status {
     message: string;
 }
 
-export interface ListNodesRequest {
+export interface ListNodesParams {
     path: string;
 }
 
-export interface ListNodesResponse {
+export interface ListNodesResult {
     entries: NodeInfo[];
 }
 
-export interface CreateRoomRequest {
+export interface CreateRoomParams {
     path: string;
-    owner_token: string;
+    ownerToken: string;
 }
 
-export interface CreateRoomResponse {
+export interface CreateRoomResult {
     status: Status;
 }
 
-export interface CreateDirectoryRequest {
+export interface CreateDirectoryParams {
     path: string;
-    owner_token: string;
+    ownerToken: string;
 }
 
-export interface CreateDirectoryResponse {
+export interface CreateDirectoryResult {
     status: Status;
+}
+
+export interface WriteMessageParams {
+    textContent: string;
+    destinationPath: string;
+    ownerToken: string;
+}
+
+export interface WriteMessageResult {
+    status: Status;
+}
+
+export interface ListMessagesParams {
+    roomPath: string;
+    limit?: number;
+}
+
+export interface ChatMessage {
+    textContent: string;
+    ownerName: string;
+    created: Date;
+}
+
+export interface ListMessagesResult {
+    messages: ChatMessage[];
 }
 
 // gRPC-Web client configuration
-const GRPC_WEB_ENDPOINT = 'http://localhost:8080'; // This will need to be configured
+const GRPC_WEB_ENDPOINT = 'http://localhost:8080'; // Envoy proxy endpoint
 
 export class ChatshGrpcClient {
-    private endpoint: string;
+    private client: PromiseClient<typeof ChatshService>;
 
     constructor(endpoint: string = GRPC_WEB_ENDPOINT) {
-        this.endpoint = endpoint;
+        const transport = createGrpcWebTransport({
+            baseUrl: endpoint,
+        });
+        this.client = createPromiseClient(ChatshService, transport);
     }
 
-    // Mock implementation for now - will be replaced with actual gRPC-Web calls
-    async listNodes(request: ListNodesRequest): Promise<ListNodesResponse> {
-        // Mock data for testing
-        const mockEntries: NodeInfo[] = [
-            {
-                name: 'general',
-                owner_name: 'admin',
-                type: NodeType.ROOM,
-                modified: new Date()
-            },
-            {
-                name: 'dev',
-                owner_name: 'admin',
-                type: NodeType.ROOM,
-                modified: new Date()
-            },
-            {
-                name: 'projects',
-                owner_name: 'admin',
-                type: NodeType.DIRECTORY,
-                modified: new Date()
-            },
-            {
-                name: 'random',
-                owner_name: 'user',
-                type: NodeType.ROOM,
-                modified: new Date()
-            }
-        ];
-
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 100));
-
+    private grpcNodeInfoToNodeInfo(entry: GrpcNodeInfo): NodeInfo {
         return {
-            entries: mockEntries
+            name: entry.name,
+            ownerName: entry.ownerName,
+            type: entry.type as unknown as NodeType, // Enum mapping
+            modified: entry.modified ? entry.modified.toDate() : undefined,
         };
     }
 
-    async createRoom(request: CreateRoomRequest): Promise<CreateRoomResponse> {
-        // Mock implementation
-        await new Promise(resolve => setTimeout(resolve, 200));
-
+    private grpcStatusToStatus(status?: GrpcStatus): Status {
         return {
-            status: {
-                ok: true,
-                message: `Room created: ${request.path}`
-            }
+            ok: status?.ok ?? false,
+            message: status?.message ?? '',
         };
     }
 
-    async createDirectory(request: CreateDirectoryRequest): Promise<CreateDirectoryResponse> {
-        // Mock implementation
-        await new Promise(resolve => setTimeout(resolve, 200));
-
+    private grpcMessageToChatMessage(msg: GrpcMessage): ChatMessage {
         return {
-            status: {
-                ok: true,
-                message: `Directory created: ${request.path}`
-            }
+            textContent: msg.textContent,
+            ownerName: msg.ownerName,
+            created: msg.created ? msg.created.toDate() : new Date(),
         };
+    }
+
+    async listNodes(params: ListNodesParams): Promise<ListNodesResult> {
+        const request = new ListNodesRequest({ path: params.path });
+        try {
+            const response = await this.client.listNodes(request);
+            const entries: NodeInfo[] = response.entries.map(this.grpcNodeInfoToNodeInfo);
+            return { entries };
+        } catch (error) {
+            console.error('Connect listNodes error:', error);
+            throw error;
+        }
+    }
+
+    async createRoom(params: CreateRoomParams): Promise<CreateRoomResult> {
+        const request = new CreateRoomRequest({ path: params.path, ownerToken: params.ownerToken });
+        try {
+            const response = await this.client.createRoom(request);
+            return { status: this.grpcStatusToStatus(response.status) };
+        } catch (error) {
+            console.error('Connect createRoom error:', error);
+            throw error;
+        }
+    }
+
+    async createDirectory(params: CreateDirectoryParams): Promise<CreateDirectoryResult> {
+        const request = new CreateDirectoryRequest({ path: params.path, ownerToken: params.ownerToken });
+        try {
+            const response = await this.client.createDirectory(request);
+            return { status: this.grpcStatusToStatus(response.status) };
+        } catch (error) {
+            console.error('Connect createDirectory error:', error);
+            throw error;
+        }
     }
 
     async checkDirectoryExists(path: string): Promise<boolean> {
-        // Mock implementation
-        await new Promise(resolve => setTimeout(resolve, 50));
+        const request = new CheckDirectoryExistsRequest({ path });
+        try {
+            const response = await this.client.checkDirectoryExists(request);
+            return response.exists;
+        } catch (error) {
+            console.error('Connect checkDirectoryExists error:', error);
+            throw error;
+        }
+    }
 
-        // Mock: assume some paths exist
-        const existingPaths = ['/home', '/home/projects', '/'];
-        return existingPaths.includes(path);
+    async writeMessage(params: WriteMessageParams): Promise<WriteMessageResult> {
+        const request = new WriteMessageRequest({
+            textContent: params.textContent,
+            destinationPath: params.destinationPath,
+            ownerToken: params.ownerToken,
+        });
+        try {
+            const response = await this.client.writeMessage(request);
+            return { status: this.grpcStatusToStatus(response.status) };
+        } catch (error) {
+            console.error('Connect writeMessage error:', error);
+            throw error;
+        }
+    }
+
+    async listMessages(params: ListMessagesParams): Promise<ListMessagesResult> {
+        const request = new ListMessagesRequest({
+            roomPath: params.roomPath,
+            limit: params.limit ?? 0,
+        });
+        try {
+            const response = await this.client.listMessages(request);
+            const messages: ChatMessage[] = response.messages.map(this.grpcMessageToChatMessage);
+            return { messages };
+        } catch (error) {
+            console.error('Connect listMessages error:', error);
+            throw error;
+        }
     }
 }
 
