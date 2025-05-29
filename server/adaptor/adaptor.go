@@ -2,10 +2,14 @@ package adaptor
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"log"
+	"time"
 
 	pb "github.com/ponyo877/chatsh/grpc"
 	"github.com/ponyo877/chatsh/server/domain"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -119,7 +123,7 @@ func (a *Adaptor) ListNodes(ctx context.Context, in *pb.ListNodesRequest) (*pb.L
 
 	pbNodeInfos := make([]*pb.NodeInfo, len(nodes))
 	for i, node := range nodes {
-		pbNodeInfos[i] = toPbNodeInfo(node) // Use the corrected helper
+		pbNodeInfos[i] = toPbNodeInfo(node)
 	}
 	return &pb.ListNodesResponse{Entries: pbNodeInfos}, nil
 }
@@ -152,11 +156,105 @@ func (a *Adaptor) WriteMessage(ctx context.Context, in *pb.WriteMessageRequest) 
 }
 
 func (a *Adaptor) StreamMessage(stream pb.ChatshService_StreamMessageServer) error {
-	if err := a.uc.StreamMessage(stream); err != nil {
-		log.Printf("Adaptor.StreamMessage: error from usecase: %v", err)
-		return err
+
+	p, _ := peer.FromContext(stream.Context())
+	remote := p.Addr.String()
+
+	sessionID := fmt.Sprintf("%s-%d", remote, time.Now().UnixNano())
+
+	requestChan := make(chan domain.StreamRequest, 32)
+	responseChan := make(chan domain.StreamResponse, 32)
+
+	usecaseErr := make(chan error, 1)
+	go func() {
+		defer close(responseChan)
+		if err := a.uc.HandleStreamSession(requestChan, responseChan, sessionID, remote); err != nil {
+			usecaseErr <- err
+		}
+	}()
+
+	responseErr := make(chan error, 1)
+	go func() {
+		for response := range responseChan {
+			if response.IsError() {
+				log.Printf("StreamMessage: error response: %v", response.Error)
+				continue
+			}
+
+			pbMessage := &pb.ServerMessage{
+				Name: response.Name,
+				Text: response.Message,
+			}
+
+			if err := stream.Send(pbMessage); err != nil {
+				responseErr <- fmt.Errorf("failed to send response: %w", err)
+				return
+			}
+		}
+	}()
+
+	defer close(requestChan)
+
+	for {
+		in, err := stream.Recv()
+		if err != nil {
+			if err == io.EOF {
+				log.Printf("Client %s disconnected normally", sessionID)
+			} else {
+				log.Printf("Client %s disconnected with error: %v", sessionID, err)
+			}
+			break
+		}
+
+		domainRequest, err := a.convertPbToDomainRequest(in)
+		if err != nil {
+			log.Printf("StreamMessage: failed to convert request: %v", err)
+			continue
+		}
+
+		select {
+		case requestChan <- domainRequest:
+		case <-stream.Context().Done():
+			return stream.Context().Err()
+		case err := <-usecaseErr:
+			return err
+		case err := <-responseErr:
+			return err
+		}
 	}
+
+	select {
+	case err := <-usecaseErr:
+		if err != nil {
+			log.Printf("StreamMessage: usecase error: %v", err)
+			return err
+		}
+	case err := <-responseErr:
+		if err != nil {
+			log.Printf("StreamMessage: response error: %v", err)
+			return err
+		}
+	case <-stream.Context().Done():
+		return stream.Context().Err()
+	}
+
 	return nil
+}
+
+func (a *Adaptor) convertPbToDomainRequest(in *pb.ClientMessage) (domain.StreamRequest, error) {
+	if join := in.GetJoin(); join != nil {
+		return domain.NewJoinRequest(join.GetName(), join.GetRoom()), nil
+	}
+
+	if tail := in.GetTail(); tail != nil {
+		return domain.NewTailRequest(tail.GetRoomPath()), nil
+	}
+
+	if chat := in.GetChat(); chat != nil {
+		return domain.NewChatRequest(chat.GetText()), nil
+	}
+
+	return domain.StreamRequest{}, fmt.Errorf("unknown request type")
 }
 
 func (a *Adaptor) ListMessages(ctx context.Context, in *pb.ListMessagesRequest) (*pb.ListMessagesResponse, error) {

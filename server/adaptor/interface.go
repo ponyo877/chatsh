@@ -1,7 +1,6 @@
 package adaptor
 
 import (
-	pb "github.com/ponyo877/chatsh/grpc"
 	"github.com/ponyo877/chatsh/server/domain"
 )
 
@@ -16,7 +15,11 @@ type Usecase interface {
 	ListNodes(path domain.Path) ([]domain.Node, error)
 	MovePath(srcPath domain.Path, dstPath domain.Path, ownerToken string) error
 	SearchMessage(path domain.Path, pattern string) ([]domain.Message, error)
-	StreamMessage(stream pb.ChatshService_StreamMessageServer) error
+	HandleStreamSession(
+		requestChan <-chan domain.StreamRequest,
+		responseChan chan<- domain.StreamResponse,
+		sessionID, remote string,
+	) error
 	WriteMessage(path domain.Path, message, ownerToken string) error
 	ListMessages(path domain.Path, limit int32) ([]domain.Message, error)
 }

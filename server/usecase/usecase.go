@@ -2,13 +2,10 @@ package usecase
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 
-	pb "github.com/ponyo877/chatsh/grpc"
 	"github.com/ponyo877/chatsh/server/adaptor"
 	"github.com/ponyo877/chatsh/server/domain"
-	"google.golang.org/grpc/peer"
 )
 
 var (
@@ -16,14 +13,19 @@ var (
 )
 
 type Usecase struct {
-	repo  Repository
-	rooms sync.Map
+	repo          Repository
+	rooms         sync.Map
+	streamManager domain.StreamManager
+	streamUsecase *StreamUsecase
 }
 
 func NewUsecase(repo Repository) adaptor.Usecase {
+	streamManager := domain.NewStreamManager()
 	return &Usecase{
-		repo:  repo,
-		rooms: sync.Map{},
+		repo:          repo,
+		rooms:         sync.Map{},
+		streamManager: streamManager,
+		streamUsecase: NewStreamUsecase(repo, streamManager),
 	}
 }
 
@@ -192,169 +194,8 @@ func (u *Usecase) ListNodes(path domain.Path) ([]domain.Node, error) {
 }
 
 const (
-	ringSize    = 1024
 	defaultRoom = "lobby"
 )
-
-type Room struct {
-	mu        sync.RWMutex
-	clients   map[*clientStream]struct{}
-	broadcast chan *pb.ServerMessage
-}
-
-func newRoom() *Room {
-	r := &Room{
-		clients:   make(map[*clientStream]struct{}),
-		broadcast: make(chan *pb.ServerMessage, ringSize),
-	}
-	go r.fanout()
-	return r
-}
-
-func (r *Room) fanout() {
-	for msg := range r.broadcast {
-		r.mu.RLock()
-		for c := range r.clients {
-			select {
-			case c.out <- msg:
-			default:
-			}
-		}
-		r.mu.RUnlock()
-	}
-}
-
-func (r *Room) add(c *clientStream) {
-	r.mu.Lock()
-	r.clients[c] = struct{}{}
-	r.mu.Unlock()
-}
-
-func (r *Room) remove(c *clientStream) {
-	r.mu.Lock()
-	delete(r.clients, c)
-	r.mu.Unlock()
-}
-
-func (r *Room) publish(name, text string) {
-	msg := &pb.ServerMessage{Name: name, Text: text}
-	select {
-	case r.broadcast <- msg:
-	default:
-		<-r.broadcast
-		r.broadcast <- msg
-	}
-}
-
-type clientStream struct {
-	name string
-	room *Room
-	out  chan *pb.ServerMessage
-}
-
-func (u *Usecase) getRoom(name string) *Room {
-	if v, ok := u.rooms.Load(name); ok {
-		return v.(*Room)
-	}
-	r := newRoom()
-	actual, _ := u.rooms.LoadOrStore(name, r)
-	return actual.(*Room)
-}
-
-func (u *Usecase) StreamMessage(stream pb.ChatshService_StreamMessageServer) error {
-	p, _ := peer.FromContext(stream.Context())
-	remote := p.Addr.String()
-
-	first, err := stream.Recv()
-	if err != nil {
-		return err
-	}
-
-	var clientName string
-	var targetRoomPath string
-	var roomID int
-	isTailMode := false
-
-	if join := first.GetJoin(); join != nil {
-		clientName = join.GetName()
-		targetRoomPath = join.GetRoom()
-	} else if tail := first.GetTail(); tail != nil {
-		targetRoomPath = tail.GetRoomPath()
-		isTailMode = true
-	} else {
-		return fmt.Errorf("first message must be Join or TailRequest")
-	}
-	if clientName == "" {
-		clientName = remote
-	}
-	if targetRoomPath == "" {
-		targetRoomPath = defaultRoom
-	}
-
-	roomNode, err := u.repo.GetNodeByPath(domain.NewPath(targetRoomPath))
-	if err != nil {
-		return fmt.Errorf("failed to get room details from DB for '%s': %w", targetRoomPath, err)
-	}
-	if roomNode.Type != domain.NodeTypeRoom {
-		return fmt.Errorf("path '%s' is not a room", targetRoomPath)
-	}
-	roomID = roomNode.ID
-
-	room := u.getRoom(targetRoomPath)
-	cli := &clientStream{name: clientName, room: room, out: make(chan *pb.ServerMessage, 32)}
-	room.add(cli)
-	defer room.remove(cli)
-
-	go func() {
-		for msg := range cli.out {
-			if errSend := stream.Send(msg); errSend != nil {
-				fmt.Printf("error sending message to %s: %v\n", cli.name, errSend)
-				return
-			}
-		}
-	}()
-
-	if !isTailMode {
-		joinText := fmt.Sprintf("joined #%s as %s", targetRoomPath, cli.name)
-		room.publish(cli.name, joinText)
-		if errDb := u.repo.CreateMessage(roomID, cli.name, joinText); errDb != nil {
-			fmt.Printf("Error saving join message to DB for roomID %d: %v\n", roomID, errDb)
-		}
-
-		defer func() {
-			leftText := fmt.Sprintf("left #%s", targetRoomPath)
-			room.publish(cli.name, leftText)
-			if errDb := u.repo.CreateMessage(roomID, cli.name, leftText); errDb != nil {
-				fmt.Printf("Error saving left message to DB for roomID %d: %v\n", roomID, errDb)
-			}
-		}()
-	}
-
-	// tailModeの場合は受信ループを実行しない
-	if isTailMode {
-		// tailModeの場合はストリームを開いたまま待機
-		<-stream.Context().Done()
-		return nil
-	}
-	for {
-		in, err := stream.Recv()
-		if err != nil {
-			fmt.Printf("Client %s disconnected: %v\n", cli.name, err)
-			return nil
-		}
-
-		if chat := in.GetChat(); chat != nil {
-			txt := strings.TrimSpace(chat.GetText())
-			if txt == "" {
-				continue
-			}
-			room.publish(cli.name, txt)
-			if errDb := u.repo.CreateMessage(roomID, cli.name, txt); errDb != nil {
-				fmt.Printf("Error saving chat message to DB for roomID %d: %v\n", roomID, errDb)
-			}
-		}
-	}
-}
 
 func (u *Usecase) SearchMessage(path domain.Path, pattern string) ([]domain.Message, error) {
 	node, err := u.repo.GetNodeByPath(path)
@@ -383,4 +224,13 @@ func (u *Usecase) WriteMessage(path domain.Path, message, ownerToken string) err
 		return fmt.Errorf("error writing message: %w", err)
 	}
 	return nil
+}
+
+// HandleStreamSession implements the new streaming interface using domain types only
+func (u *Usecase) HandleStreamSession(
+	requestChan <-chan domain.StreamRequest,
+	responseChan chan<- domain.StreamResponse,
+	sessionID, remote string,
+) error {
+	return u.streamUsecase.HandleStreamSession(requestChan, responseChan, sessionID, remote)
 }
